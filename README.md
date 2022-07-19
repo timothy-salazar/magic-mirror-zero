@@ -4,4 +4,5 @@ The [most popular magic mirror software](https://github.com/MichMich/MagicMirror
 This version will:
 - run on a raspberry pi zero
 - require only Raspberry Pi OS lite
+
 As a trade off, this will have a largely text based display paradigm, with only crude graphics available.  
