@@ -14,3 +14,4 @@ The central idea of this approach is as follows:
 - We can then embed all the information we're interested in dispalying into a block of text term_width x term_height characters in size. This block of text will be stored as a text file called term.txt.
 - Each plugin we enable will be run as a cron job run on a specified schedule. These will update the relevant section of text in term.txt.
     - For example: we've made a plugin that retrieves the weather and displays the forecast. We've specified that this forecast is to be displayed in the upper left corner of our magic mirror (let's say the first 40 columns and the first 3 rows). When the cron job is executed we would retrieve the forecast, convert it to a block of text no larger than 40x3 characters, and insert it into term.txt
+
