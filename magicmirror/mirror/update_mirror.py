@@ -2,6 +2,8 @@
 term.txt file.
 """
 import os
+import sys
+import argparse
 
 def get_script_dir():
     """ Input:
@@ -61,7 +63,7 @@ def insert_text_block(txt, column, row, txt_width, txt_height):
             txt_width: int - how many rows does the text box take up
         Output:
             Edits the term.txt file
-    
+
     It may be that I'll need to rewrite this.
     I think that by doing the reading and writing all in one step I can avoid
     issues with other bits and pieces trying to modify and/or display the
@@ -86,3 +88,43 @@ def insert_text_block(txt, column, row, txt_width, txt_height):
         new_data = '\n'.join(old_data)
         f.seek(0)
         f.write(new_data)
+
+if __name__ == "__main__":
+    """ Input:
+            column: int - how many columns from the left edge of the terminal
+                is the text box? A value of 0 will position the text box
+                as far left as it will go
+            row: int - how many rows from the top of the terminal is the text
+                box?
+            width: int - how many columns wide is the text box?
+            height: int - how many rows tall is the text box?
+
+    Additionally, this script expects text to be fed to it through a Unix pipe.
+    example:
+        echo 'some text\nnice text' | python update_mirror.py 1 2 9 2
+
+    It will embed the text it receives into term.txt (assuming it is valid).
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        'column',
+        help='How many columns from the left edge of the terminal is this text box?',
+        type=int)
+    parser.add_argument(
+        'row',
+        help='How many rows from the top of the terminal is this text box?',
+        type=int)
+    parser.add_argument(
+        'width',
+        help='Width of the text box in columns',
+        type=int)
+    parser.add_argument(
+        'height',
+        help='Height of the text box in rows',
+        type=int)
+    args = parser.parse_args()
+    text = sys.stdin.read()
+
+    insert_text_block(text, args.column, args.row, args.width, args.height)
+
+    sys.exit(0)
