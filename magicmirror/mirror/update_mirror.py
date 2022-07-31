@@ -4,6 +4,7 @@ term.txt file.
 import os
 import sys
 import argparse
+import re
 
 def get_script_dir():
     """ Input:
@@ -48,6 +49,53 @@ def make_term_file():
     with open(term_file_path, 'w+') as f:
         f.write(display_text)
 
+def break_line_into_characters(line):
+    """ We're going to be using ANSI escape codes to add color to
+    characters/background, add styling (bold, underline, etc.), and who knows
+    what other shenanigans.
+    This adds some complexity to the insert_text_block() function.
+    If we didn't use ANSI escape codes, one character in the term.txt file would
+    represent one character on the terminal. That would make it pretty trivial
+    to insert blocks of text into term.txt, since we could just break the text
+    into rows, and then slice each row at (for example) character 5, if we
+    wanted to insert text there.
+    With ANSI escape codes, we have extra text associated with each character.
+    A pink "Z" on a blue background is:
+        '\x1b[38;2;200;16;57;48;2;10;6;200mZ\x1b[0m'
+    This function takes a string and turns it into a list, where each entry is
+    a single printable character.
+
+    ### BIG ASSUMPTION: ###
+    For simplicity, we're going to assume that each character with ANSI escape
+    code formatting is formatted individually.
+    If we want "Hello world!" to be printed in red, we *could* print the
+    sequence:
+        '\x1b[38;2;255;0;0mHello world!\x1b[0m'
+    But instead, we will be printing each individual character in its own escape
+    sequence bubble:
+        '\x1b[38;2;255;0;0mH\x1b[0m\x1b[38;2;255;0;0me\x1b[0m'...
+    This makes the term.txt file VERY VERBOSE, and I'm not sure that it's the
+    best way to approach this.
+    We're also going to assume that each character is followed by '\x1b[0m',
+    which is an escape sequence that resets all attributes (so we have a clean
+    slate.
+    Given that most of the term.txt file is expected to be whitespace (this is
+    for a magic mirror, and most of the display will be blank), I don't think
+    that this will have enough of an impact to really matter - but I could be
+    wrong. We'll see.
+    """
+
+    get_char_expression = r'''
+        \x1b\[          # This begins the escape sequence
+        ([0-9]{1,3};)+? # semicolon-separated parameters
+        [0-9]{1,3}m     # final parameter
+        (?P<char>.)     # the printable character
+        \x1b\[0m        # resets everything back to normal
+        |.              # this matches non-ANSI-formatted characters
+        '''
+    get_char = re.compile(get_char_expression, re.VERBOSE)
+    return [i.group(0) for i in get_char.finditer(line)]
+
 def insert_text_block(txt, column, row, txt_width, txt_height):
     """ Input:
             txt: string - a block of text that we want to insert into the
@@ -69,13 +117,15 @@ def insert_text_block(txt, column, row, txt_width, txt_height):
     issues with other bits and pieces trying to modify and/or display the
     contents of term.txt, but I could be horrendously wrong.
     """
-    txt_lines = txt.split('\n')
+    txt_lines = [break_line_into_characters(line) for line in txt.split('\n')]
     script_dir = get_script_dir()
     term_file_path = os.path.join(script_dir, 'term.txt')
     with open(term_file_path, 'r+') as f:
+        # read old terminal state
         old_data = f.read().split('\n')
+
         for row_number in range(len(old_data)):
-            line = old_data[row_number]
+            line = break_line_into_characters(old_data[row_number])
             if row_number < row:
                 pass
             elif row_number > (row + txt_height - 1):
@@ -84,10 +134,13 @@ def insert_text_block(txt, column, row, txt_width, txt_height):
                 new_line = line[:column] \
                     + txt_lines[row_number-row] \
                         + line[txt_width+column:]
-                old_data[row_number] = new_line
+                old_data[row_number] = ''.join(new_line)
+
+        # write new data to term.txt file
         new_data = '\n'.join(old_data)
         f.seek(0)
         f.write(new_data)
+        f.truncate()
 
 if __name__ == "__main__":
     """ Input:
