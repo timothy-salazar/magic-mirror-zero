@@ -96,6 +96,42 @@ def break_line_into_characters(line):
     get_char = re.compile(get_char_expression, re.VERBOSE)
     return [i.group(0) for i in get_char.finditer(line)]
 
+def twiddle_bits(old_str):
+    """ Input:
+            old_str: string - the text we intent to display on the terminal
+        Output:
+            twiddled: string - the exact same string, but with a deliberately
+                superficial change to the very end.
+    This takes the string we're going to print to the terminal and it changes
+    the last few characters.
+    The ANSI escape sequence '\x1b\[0m' resets all attributes to normal.
+        - if the file does not end with '\x1b\[0m', we add it to the end
+        - if there is one occurrence of the string, we repeat it
+        - if there is more than one occurrence, we replace it with a single
+          repetition
+    The reason for this is our use of the 'tail' command to display the contents
+    of term.txt.
+    If you run the command:
+        tail +0 -f term.txt
+    it will display the contents of term.txt _beautifully_, including all the
+    color formatting we get from our ANSI escape sequences. On top of that, it
+    will display changes to the file.....
+    ...but only if the end of the file has been changed (the documentation says
+    that it waits "for additional data to be appended to the input").
+    So this isn't exactly what I want, but I'm trying to get a POC first, and
+    I'll try to make this *slick* and *cool* later.
+    """
+    end_codes = re.compile('(\x1b\[0m)*$')
+    match = end_codes.search(old_str)
+    end_matches = match.group()
+    if len(end_matches) == 4:
+        new_end = '\x1b[0m\x1b[0m'
+    else:
+        new_end = '\x1b[0m'
+    twiddle = old_str[:match.span()[0]] + new_end
+    return twiddle
+
+
 def insert_text_block(txt, column, row, txt_width, txt_height):
     """ Input:
             txt: string - a block of text that we want to insert into the
