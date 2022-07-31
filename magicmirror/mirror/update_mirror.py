@@ -1,6 +1,7 @@
-""" Receives block of text from a plugin and inserts the block of text into the
-term.txt file.
-"""
+# !/bin/python
+# Receives block of text from a plugin and inserts the block of text into the
+# term.txt file.
+#
 import os
 import sys
 import argparse
