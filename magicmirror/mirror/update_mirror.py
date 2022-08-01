@@ -22,33 +22,7 @@ def get_script_dir():
     script_dir = os.path.dirname(this_file_path)
     return script_dir
 
-def make_term_file():
-    """ Input:
-            None
-        Output:
-            Creates or overwrites a file with enough whitespace characters to
-            completely fill the terminal.
-    This does the following:
-        - Gets the terminal width and height (in columns and rows)
-        - Opens a file in the same directory as this script named "term.txt"
-        - Fills the file with spaces, such that there are term_height lines,
-          each of which is term_width long.
-    """
-    # Width/height are in columns/lines
-    term_width, term_height = os.get_terminal_size()
-    # This makes a string that should completely cover the terminal if you print
-    # it out.
-    # Equivalent to:
-    #   display_text = ''
-    #   for y in range(term_height):
-    #       for x in range(term_width):
-    #           display_text += ' '
-    #       display_text += '\n'
-    display_text = '\n'.join([' '*term_width for i in range(term_height)])
-    script_dir = get_script_dir()
-    term_file_path = os.path.join(script_dir, 'term.txt')
-    with open(term_file_path, 'w+') as f:
-        f.write(display_text)
+
 
 def break_line_into_characters(line, size=None):
     """ We're going to be using ANSI escape codes to add color to
@@ -158,8 +132,10 @@ def insert_text_block(txt, column, row, txt_width, txt_height):
     contents of term.txt, but I could be horrendously wrong.
     """
     # Make the text into a list of lists
-    txt_lines = [break_line_into_characters(line) for line in txt.split('\n')]
-    
+    txt_lines = [break_line_into_characters(line, txt_width)
+                    for line in txt.split('\n')][:txt_height]
+    if len(txt_lines) < txt_height:
+        txt_lines += [[' ']*txt_width]*(txt_height - len(txt_lines))
     script_dir = get_script_dir()
     term_file_path = os.path.join(script_dir, 'term.txt')
     with open(term_file_path, 'r+') as f:
