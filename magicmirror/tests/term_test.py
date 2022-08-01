@@ -48,14 +48,22 @@ def fill_screen_solid(width, height):
     # we use strip() here to get rid of the last new line character
     return screen_text.strip()
 
+def get_term_file_path():
+    this_file_path = os.path.abspath(__file__)
+    this_dir_path = os.path.dirname(this_file_path)
+    parent_dir = os.path.split(this_dir_path)[0]
+    mirror_dir = os.path.join(parent_dir,'mirror')
+    return os.path.join(mirror_dir, 'term.txt')
+
 def main():
     """gets the width and height of the terminal in columns and lines, then
-    fills it with randomly colored blocks. 
+    fills it with randomly colored blocks.
     This is mainly just to see that everything is working as expected.
     """
     width, height = os.get_terminal_size()
-    print(f'Width: {width} Height: {height}')
-    print(fill_screen_random(width, height))
+    path = get_term_file_path()
+    with open(path,'w+') as f:
+        f.write(fill_screen_random(width, height))
 
 if __name__ == "__main__":
     main()

@@ -2,5 +2,5 @@
 the NASA Astronomy Pic of the Day API:
     https://github.com/nasa/apod-api
 NASA has a bunch of APIs that are worth checking out:
-    https://api.nasa.gov/ 
+    https://api.nasa.gov/
 """
