@@ -28,3 +28,6 @@ def make_term_file():
     term_file_path = os.path.join(script_dir, 'term.txt')
     with open(term_file_path, 'w+') as f:
         f.write(display_text)
+
+if __name__ == "__main__":
+    make_term_file()
