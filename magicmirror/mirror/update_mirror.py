@@ -50,7 +50,7 @@ def make_term_file():
     with open(term_file_path, 'w+') as f:
         f.write(display_text)
 
-def break_line_into_characters(line):
+def break_line_into_characters(line, size=None):
     """ We're going to be using ANSI escape codes to add color to
     characters/background, add styling (bold, underline, etc.), and who knows
     what other shenanigans.
@@ -95,7 +95,10 @@ def break_line_into_characters(line):
         |.              # this matches non-ANSI-formatted characters
         '''
     get_char = re.compile(get_char_expression, re.VERBOSE)
-    return [i.group(0) for i in get_char.finditer(line)]
+    char_list = [i.group(0) for i in get_char.finditer(line)]
+    if size and (len(char_list) < size):
+        char_list += [' ']*(size - len(char_list))
+    return char_list[:size]
 
 def twiddle_bits(old_str):
     """ Input:
@@ -144,8 +147,8 @@ def insert_text_block(txt, column, row, txt_width, txt_height):
             row: int - the offset of the upper lefthand corner of the text
                 block (in rows from the start of the file). If it's all the way
                 at the top of the page, 'row' would be 0.
-            txt_width: int - how many characters wide is the text box
-            txt_width: int - how many rows does the text box take up
+            txt_width: int - maximum width of the text box (in columns)
+            txt_width: int - maximum height of the text box (in rows)
         Output:
             Edits the term.txt file
 
@@ -154,7 +157,9 @@ def insert_text_block(txt, column, row, txt_width, txt_height):
     issues with other bits and pieces trying to modify and/or display the
     contents of term.txt, but I could be horrendously wrong.
     """
+    # Make the text into a list of lists
     txt_lines = [break_line_into_characters(line) for line in txt.split('\n')]
+    
     script_dir = get_script_dir()
     term_file_path = os.path.join(script_dir, 'term.txt')
     with open(term_file_path, 'r+') as f:
