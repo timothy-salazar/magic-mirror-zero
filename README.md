@@ -37,6 +37,6 @@ file got changed every time its contents changed), but only on my laptop where I
 
 To make a long story short, after a trek through the wastes of the internet I found this answer: https://stackoverflow.com/a/69388883/19669305
 
-This code is included in the color-watch.sh file. It lets us update the terminal whenever we change the term.txt file while avoiding any obnoxious flickering as the screen is refreshed. [Stackoverflow user TK009,](https://stackoverflow.com/users/3276936/tk009) I salute you. 
+This code is included in the color-watch.sh file. It lets us update the terminal whenever we change the term.txt file while avoiding any obnoxious flickering as the screen is refreshed. This works extremely well even when the screen is full of randomly colored half-blocks with randomly colored backgrounds (you can fill term.txt with this using the term_test.py script in the tests directory). [Stackoverflow user TK009,](https://stackoverflow.com/users/3276936/tk009) I salute you. 
 
 

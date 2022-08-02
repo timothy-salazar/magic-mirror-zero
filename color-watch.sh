@@ -6,7 +6,7 @@
 trap "tput cnorm" EXIT  # unhide the cursor when the script exits or is interrupted
 
 # simple interval parameter parsing, can be improved
-INTERVAL=2s
+INTERVAL=2
 case $1 in
   -n|--interval)
     INTERVAL="$2"
