@@ -1,5 +1,5 @@
 import os
-from update_mirror import get_script_dir
+from .update_mirror import get_script_dir
 
 def make_term_file():
     """ Input:
