@@ -1,0 +1,52 @@
+# Each entry in this file contains the information needed to launch a cron job, 
+# with the exception of the 'environment' entry. For all other entries, the 
+# following are required:
+#
+#   - timing: how often do you want the job to run? This uses the crontab
+#           format for specifying a schedule. If you're unfamiliar with this,
+#           here are some resources:
+#               https://crontab.guru/
+#               https://manpages.debian.org/jessie/cron/crontab.5.en.html
+# 
+#   - box_column: each widget takes up a rectangular section of the screen. This
+#           value specifies the X VALUE of the UPPER LEFT CORNER of that
+#           rectangle. Because this is all happening with text in the terminal,
+#           the units are COLUMNS indexed from zero.
+#
+#   - box_row: each widget takes up a rectangular section of the screen. This
+#           value specifies the Y VALUE of the UPPER LEFT CORNER of that
+#           rectangle. Because this is all happening with text in the terminal,
+#           the units are ROWS indexed from zero.
+#
+#   - box_width: each widget takes up a rectangular section of the screen. This
+#           value specifies the WIDTH of that box in COLUMNS
+#
+#   - box_height: each widget takes up a rectangular section of the screen. This
+#           value specifies the HEIGHT of that box IN ROWS
+#
+#   - command: the command that we want cron to run. 
+#           - A few notes:
+#               - I'm setting SHELL to /bin/bash, so the command will be 
+#                 interpreted by bash (the default is /bin/sh, but I think more
+#                 people are familiar with bash, and I want this to be friendly
+#                 to hack).
+#               - Percent signs (%) will be interpreted as newlines unless you
+#                 escape them with a backslash (blame cron, not me)
+#
+# There is also the special 'environment' entry.
+# Stuff you put in there will more or less be environment variables as far as 
+# cron is concerned. 
+#
+#
+#
+
+[environment]
+SHELL = /bin/bash 
+
+[clock]
+timing = ''
+box_column = ''
+box_row = ''
+box_width = ''
+box_height = ''
+command = ''
