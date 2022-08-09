@@ -21,21 +21,22 @@ def read_config():
     config.read(config_path)
     return config
 
-def cron_formatter(config):
+def cron_formatter():
     """ Input:
-            config: configparser.ConfigParser - a configparser object containing
-                the information in the configuration file
+            None
         Output:
     """
+    config = read_config()
     crontab = ''
     template = assemble_template()
     sections = config.sections()
     for section_name in sections:
         section = config[section_name]
-        if section == 'environment':
+        if section_name == 'environment':
             crontab += environment_formatter(section)
+            continue
         crontab += template.format(**dict(section))
-
+    return crontab
 
 def assemble_template():
     """ Input:

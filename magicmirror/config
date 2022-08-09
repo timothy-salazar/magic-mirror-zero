@@ -54,6 +54,7 @@ box_width = 71
 box_height = 11
 # We need to escape any % symbols. See:
 #   https://docs.python.org/3/library/configparser.html#interpolation-of-values
-# The configparser will turn any '%%' values into '\%', which is good, since any '%'
-# characters are interpreted as newlines by cron. 
-command = figlet -f colossal $("+%%I : %%M %%p")
+# Because of how cron works, we ALSO need to escape % symbols with a backslash, 
+# otherwise they will be interpreted as newlines by cron.
+# So, each '%' needs to be replaced with '\%%' - it's a bit silly, but there we go. 
+command = figlet -f colossal $(date "+\%%I : \%%M \%%p")
