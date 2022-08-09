@@ -34,7 +34,8 @@ def cron_formatter(config):
         section = config[section_name]
         if section == 'environment':
             crontab += environment_formatter(section)
-        crontab += template.format(**dict(section.items()))
+        crontab += template.format(**dict(section))
+
 
 def assemble_template():
     """ Input:

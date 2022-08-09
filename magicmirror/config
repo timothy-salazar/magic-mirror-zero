@@ -47,9 +47,13 @@
 SHELL = /bin/bash 
 
 [clock]
-timing = ''
+timing = '* * * * *'
 box_column = 0
 box_row = 0
-box_width = ''
-box_height = ''
-command = ''
+box_width = 71
+box_height = 11
+# We need to escape any % symbols. See:
+#   https://docs.python.org/3/library/configparser.html#interpolation-of-values
+# The configparser will turn any '%%' values into '\%', which is good, since any '%'
+# characters are interpreted as newlines by cron. 
+command = figlet -f colossal $("+%%I : %%M %%p")
