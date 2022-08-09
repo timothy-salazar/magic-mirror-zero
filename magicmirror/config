@@ -25,6 +25,9 @@
 #           value specifies the HEIGHT of that box IN ROWS
 #
 #   - command: the command that we want cron to run. 
+#           This command should return a block of text, with each line separated
+#           by a newline. The block of text will be inserted into the term.txt
+#           file.
 #           - A few notes:
 #               - I'm setting SHELL to /bin/bash, so the command will be 
 #                 interpreted by bash (the default is /bin/sh, but I think more
@@ -45,8 +48,8 @@ SHELL = /bin/bash
 
 [clock]
 timing = ''
-box_column = ''
-box_row = ''
+box_column = 0
+box_row = 0
 box_width = ''
 box_height = ''
 command = ''

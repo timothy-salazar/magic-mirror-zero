@@ -6,6 +6,7 @@ import os
 import sys
 import argparse
 import re
+from pathlib import Path
 
 def get_script_dir():
     """ Input:
@@ -21,6 +22,17 @@ def get_script_dir():
     this_file_path = os.path.abspath(__file__)
     script_dir = os.path.dirname(this_file_path)
     return script_dir
+
+def get_project_dir():
+    script_dir = get_script_dir()
+    path = Path(script_dir).resolve()
+    for parent in path.parents:
+        stem = parent.stem
+        if stem == 'magic-mirror-zero':
+            return parent
+
+    raise FileNotFoundError('Could not find project directory')
+
 
 def break_line_into_characters(line, size=None):
     """ We're going to be using ANSI escape codes to add color to
