@@ -50,7 +50,7 @@ SHELL = /bin/bash
 timing = * * * * *
 box_column = 0
 box_row = 0
-box_width = 71
+box_width = 74
 box_height = 11
 # We need to escape any % symbols. See:
 #   https://docs.python.org/3/library/configparser.html#interpolation-of-values
