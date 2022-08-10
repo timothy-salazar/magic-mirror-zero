@@ -9,9 +9,20 @@ import configparser
 from update_mirror import get_project_dir
 
 def main():
+    """ Input:
+            None
+        Output:
+            None
+    Deletes user crontab, creates new crontab text (which is saved as a file in
+    the project root directory), and then installs the new crontab file.
+    """
+    project_dir = get_project_dir()
+    crontab_path = project_dir.joinpath('crontab.txt')
+    subprocess.run(['crontab', '-r'], check=True)
     crontab = cron_formatter()
-    subprocess.run(['crontab', '-r'])
-    
+    with open(crontab_path, 'w+') as f:
+        f.write(crontab)
+    subprocess.run(['crontab', crontab_path], check=True)
 
 def read_config():
     """ Input:
@@ -73,7 +84,5 @@ def environment_formatter(section):
         environment_settings += f'{name} = {value}\n'
     return environment_settings
 
-
-
 if __name__ == "__main__":
-    read_config()
+    main()
