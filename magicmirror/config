@@ -47,7 +47,7 @@
 SHELL = /bin/bash 
 
 [clock]
-timing = '* * * * *'
+timing = * * * * *
 box_column = 0
 box_row = 0
 box_width = 71

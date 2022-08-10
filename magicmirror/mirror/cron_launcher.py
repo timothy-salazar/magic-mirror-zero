@@ -4,8 +4,14 @@ user crontab file.
 The cron_launcher() function then adds or updates each entry to the user
 crontab file.
 """
+import subprocess
 import configparser
 from update_mirror import get_project_dir
+
+def main():
+    crontab = cron_formatter()
+    subprocess.run(['crontab', '-r'])
+    
 
 def read_config():
     """ Input:
@@ -66,6 +72,8 @@ def environment_formatter(section):
     for name, value in section.items():
         environment_settings += f'{name} = {value}\n'
     return environment_settings
+
+
 
 if __name__ == "__main__":
     read_config()
