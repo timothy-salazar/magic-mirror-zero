@@ -7,5 +7,8 @@
 
 # Variables
 PROJECT_DIR=$(dirname $0)
+MIRROR_DIR=$PROJECT_DIR/magicmirror/mirror
 
-./color-watch.sh cat $PROJECT_DIR/magicmirror/mirror/term.txt
+python $MIRROR_DIR/make_term_file.py
+python $MIRROR_DIR/cron_launcher.py
+$PROJECT_DIR/color-watch.sh cat $MIRROR_DIR/term.txt
