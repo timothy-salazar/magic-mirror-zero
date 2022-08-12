@@ -53,7 +53,7 @@ def make_command_file(config):
     """
     # this gets the path to where we're going to save the command file
     project_dir = get_project_dir()
-    command_path = project_dir.joinpath('commands.sh')
+    command_path = project_dir.joinpath('command.sh')
 
     # We write the commands the user has specified that they want run
     # on startup to a file called 'commands.sh' in the project root directory.

@@ -11,4 +11,5 @@ MIRROR_DIR=$PROJECT_DIR/magicmirror/mirror
 
 python $MIRROR_DIR/make_term_file.py
 python $MIRROR_DIR/cron_launcher.py
+bash $PROJECT_DIR/command.sh
 $PROJECT_DIR/color-watch.sh cat $MIRROR_DIR/term.txt
