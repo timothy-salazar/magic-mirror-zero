@@ -57,7 +57,7 @@ SHELL = /bin/bash
 [clock]
 timing = * * * * *
 box_column = 0
-box_row = 0
+box_row = 12
 box_width = 74
 box_height = 11
 # We need to escape any % symbols. See:
@@ -65,5 +65,14 @@ box_height = 11
 # Because of how cron works, we ALSO need to escape % symbols with a backslash, 
 # otherwise they will be interpreted as newlines by cron.
 # So, each '%' needs to be replaced with '\%%' - it's a bit silly, but there we go. 
-command = figlet -f colossal $(date "+\%%I : \%%M \%%p")
+command = figlet -f colossal -o -k $(date "+\%%I : \%%M \%%p")
+
+[calendar]
+timing = 0 0 * * *
+box_column = 0
+box_row = 0
+box_width = 100
+box_height = 11
+command = figlet -w 100 -f colossal -o -k $(date "+\%%a \%%b \%%d")
+# This calendar widget is where I realized we need a "run_at_startup" option
 run_at_startup = True

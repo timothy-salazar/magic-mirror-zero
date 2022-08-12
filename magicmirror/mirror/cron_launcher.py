@@ -11,7 +11,7 @@ from update_mirror import get_project_dir
 def main():
     config = read_config()
     replace_crontab(config)
-
+    make_command_file(config)
 
 def replace_crontab(config):
     """ Input:
