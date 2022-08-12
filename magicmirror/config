@@ -36,15 +36,23 @@
 #               - Percent signs (%) will be interpreted as newlines unless you
 #                 escape them with a backslash (blame cron, not me)
 #
+# There are also the following optional values:
+#   
+#   - run_at_startup: if this is set to True, the command indicated by 'command' 
+#           will be run once when cron_launcher.py is run (which is to say every
+#           time start_mirror.sh is invoked). 
+#
 # There is also the special 'environment' entry.
 # Stuff you put in there will more or less be environment variables as far as 
 # cron is concerned. 
-#
-#
-#
 
 [environment]
+# This holds environment variables that you want your cron jobs to have access to.
 SHELL = /bin/bash 
+# latitude = 
+# longitude = 
+# API_KEY = 
+# etc...
 
 [clock]
 timing = * * * * *
@@ -58,3 +66,4 @@ box_height = 11
 # otherwise they will be interpreted as newlines by cron.
 # So, each '%' needs to be replaced with '\%%' - it's a bit silly, but there we go. 
 command = figlet -f colossal $(date "+\%%I : \%%M \%%p")
+run_at_startup = True
