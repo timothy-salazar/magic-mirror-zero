@@ -95,7 +95,7 @@ def command_formatter(config):
         section = dict(config[section_name])
         if section_name == 'environment':
             continue
-        if section['run_at_startup'].lower() != 'true':
+        if section.get('run_at_startup', 'true').lower() != 'true':
             continue
         command = section['command']
         # Any '%' symbols in the command need to be backslash escaped if they're
