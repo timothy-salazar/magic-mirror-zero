@@ -24,6 +24,8 @@ def get_script_dir():
     return script_dir
 
 def get_project_dir():
+    """ Returns the path of the project's root directory
+    """
     script_dir = get_script_dir()
     path = Path(script_dir).resolve()
     for parent in path.parents:
@@ -106,8 +108,10 @@ def insert_text_block(txt, column, row, txt_width, txt_height):
     contents of term.txt, but I could be horrendously wrong.
     """
     # Make the text into a list of lists
+    # Truncates list if number of lines exceeds txt_height
     txt_lines = [break_line_into_characters(line, txt_width)
                     for line in txt.split('\n')][:txt_height]
+    # Adds lines made of whitespace if number of lines is less than text_height
     if len(txt_lines) < txt_height:
         txt_lines += [[' ']*txt_width]*(txt_height - len(txt_lines))
     script_dir = get_script_dir()
