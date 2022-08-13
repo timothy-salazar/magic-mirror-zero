@@ -279,7 +279,7 @@ if __name__ == "__main__":
     horizontal.add_argument(
         '-fi',
         '--foreground-increment',
-        dest='foreground_increment',
+        dest='h_foreground_increment',
         nargs=3,
         type=int,
         help='''
@@ -291,7 +291,7 @@ if __name__ == "__main__":
     horizontal.add_argument(
         '-bi',
         '--background-increment',
-        dest='background_increment',
+        dest='h_background_increment',
         nargs=3,
         type=int,
         help='''
@@ -310,7 +310,7 @@ if __name__ == "__main__":
     vertical.add_argument(
         '-fi',
         '--foreground-increment',
-        dest='foreground_increment',
+        dest='v_foreground_increment',
         nargs=3,
         type=int,
         help='''
@@ -322,7 +322,7 @@ if __name__ == "__main__":
     vertical.add_argument(
         '-bi',
         '--background-increment',
-        dest='background_increment',
+        dest='v_background_increment',
         nargs=3,
         type=int,
         help='''
@@ -332,134 +332,296 @@ if __name__ == "__main__":
         '''
     )
 
+
+
+
+
+
+
+
+
+
+
+
+
+
     ##################
     # Cylic gradient:
     ##################
+    #
+    # This part of the parser is UGLY because we need to enable the user to
+    # specify period, min_value, max_value, and offset for:
+    #   - direction (horizontal, vertical)
+    #       - foreground vs. background
+    #           - color component (r,g,b)
+    # This requires a lot of subparsers
+
+    # OK, this is officially gross enough that I'm going to use another library.
+    # Click seems cool.
     cyclic = subparsers.add_parser(
         'cyclic-gradient',
         aliases=['cyclic-gradient', 'cg']
     )
-    cycopts = cyclic.add_subparsers()
-    ############################
-    # Horizontal linear gradient
-    ############################
-    cyc_horiz = cycopts.add_parser(
+    cycsubs = cyclic.add_subparsers()
+
+    # Direction
+    cyc_horiz = cycsubs.add_parser(
         'horizontal',
         aliases=['horizontal-gradient', 'horiz', 'hg']
     )
-    '''         
-            period: int - the number of steps before we finish one complete
-                cycle of the sine wave.
-            min_value: int - the minimum value allowed for 'out'
-            max_value: int - the maximum value allowed for 'out'
-            offset: int or float - the amount, in units of pi/2, by which the
-                sine wave we're generating should be shifted to the left. Some
-                sample values:
-                    offset = 0:
-                        - step=0:           out=max_value       out heading down
-                        - step=(period/2):  out=min_value       out heading up
-                        - step=(period):    out=max_value       out heading down
-                    offset = 1:
-                        - step=0:           out=max_value/2     out heading down
-                        - step=(period/2):  out=max_value/2     out heading up
-                    offset = 2:
-                        - step=0:           out=min_value       out heading up
-                        - step=(period/2):  out=max_value       out heading down
-                    offset = 3:
-                        - step=0:           out=max_value/2     out heading up
-                        - step=(period/2):  out=max_value/2     out heading down
-                        '''
-    cyc_horiz.add_argument(
-        '-mf',
-        '--min-foreground-vals',
-        dest='min_foreground',
-        nargs=3,
-        type=int,
-        help='''
-        Expects three integers corresponding to the smallest value we should
-        allow for the red, green, and blue components of the foreground.
-        '''
-    )
-    cyc_horiz.add_argument(
-        '-mb',
-        '--min-background-vals',
-        dest='min_background',
-        nargs=3,
-        type=int,
-        help='''
-        Expects three integers corresponding to the smallest value we should
-        allow for the red, green, and blue components of the background.
-        '''
-    )
-    cyc_horiz.add_argument(
-        '-mf',
-        '--max-foreground-vals',
-        dest='max_foreground',
-        nargs=3,
-        type=int,
-        help='''
-        Expects three integers corresponding to the smallest value we should
-        allow for the red, green, and blue components of the foreground.
-        '''
-    )
-    cyc_horiz.add_argument(
-        '-mb',
-        '--max-background-vals',
-        dest='max_background',
-        nargs=3,
-        type=int,
-        help='''
-        Expects three integers corresponding to the smallest value we should
-        allow for the red, green, and blue components of the background.
-        '''
-    )
-    
-    ##########################
-    # Vertical cyclic gradient
-    ##########################
-    cyc_vert = cycopts.add_parser(
+    cyc_vert = cycsubs.add_parser(
         'vertical',
         aliases=['vertical-gradient', 'vert', 'vg']
     )
-    cyc_vert.add_argument(
-        '-fi',
-        '--foreground-increment',
-        dest='foreground_increment',
-        nargs=3,
-        type=int,
-        help='''
-        Expects three integers corresponding to the amound by which the red,
-        green, and blue components of the foreground should be incremented
-        for each row in the text
-        '''
-    )
-    cyc_vert.add_argument(
-        '-bi',
-        '--background-increment',
-        dest='background_increment',
-        nargs=3,
-        type=int,
-        help='''
-        Expects three integers corresponding to the amound by which the red,
-        green, and blue components of the background should be incremented
-        for each row in the text 
-        '''
-    )
-    # Linear gradient:
-    #     - start value
-    #     - one of:
-    #         - increment
-    #         - stop value
-    # Linear gradient 2d:
-    #     - start value (x0, y0)
-    #     - one of:
-    #         - increment x, and increment y
-    #         - stop value x, stop value y
-    # Cycle:
-    #     - start value
-    #     - period
-    #     - max value
-    #     - min_value
+    subparser_list = []
+    parser_list = []
+    for parse in [cyc_vert, cyc_horiz]:
+        subparser_list.append(parse.add_subparsers())
+        parser_list.append(
+            subparser_list[-1].add_parser(
+                'foreground',
+                aliases=['fg']
+            )
+        )
+        parser_list.append(
+            subparser_list[-1].add_parser(
+                'background',
+                aliases=['bg']
+            )
+        )
+    for p in parser_list:
+        p.add_argument(
+            '-p',
+            '--period',
+            dest='period',
+            nargs=3,
+            type=int,
+            help='''
+            The number of steps required to finish one complete cycle of the 
+            sine wave. 
+            '''
+        )
+        p.add_argument(
+            '-o',
+            '--offset',
+            dest='offset',
+            nargs=3,
+            type=float,
+            help='''
+            Three floats corresponding to the offset for the red, green, and 
+            blue components.
+            The amount, in units of pi/2, by which the sine wave we're 
+            generating should be shifted to the left. The function is set so 
+            that with an offset of 0, the sine wave will begin at its maximum 
+            value. If offset is 2, it starts at its minimum value. 
+            '''
+        )
+        p.add_argument(
+            '-mv',
+            '--min-vals',
+            dest='min_vals',
+            nargs=3,
+            type=int,
+            help='''
+            Expects three integers corresponding to the smallest value we should
+            allow for the red, green, and blue components.
+            '''
+        )
+        p.add_argument(
+            '-mx',
+            '--max-vals',
+            dest='min_vals',
+            nargs=3,
+            type=int,
+            help='''
+            Expects three integers corresponding to the smallest value we should
+            allow for the red, green, and blue components.
+            '''
+        )
+
+
+
+
+
+
+
+
+    # cyclic = subparsers.add_parser(
+    #     'cyclic-gradient',
+    #     aliases=['cyclic-gradient', 'cg']
+    # )
+    # cycopts = cyclic.add_subparsers()
+    # ############################
+    # # Horizontal linear gradient
+    # ############################
+    # cyc_horiz = cycopts.add_parser(
+    #     'horizontal',
+    #     aliases=['horizontal-gradient', 'horiz', 'hg']
+    # )
+    # '''
+    #         period: int - the number of steps before we finish one complete
+    #             cycle of the sine wave.
+    #         min_value: int - the minimum value allowed for 'out'
+    #         max_value: int - the maximum value allowed for 'out'
+    #         offset: int or float - the amount, in units of pi/2, by which the
+    #             sine wave we're generating should be shifted to the left. Some
+    #             sample values:
+    #                 offset = 0:
+    #                     - step=0:           out=max_value       out heading down
+    #                     - step=(period/2):  out=min_value       out heading up
+    #                     - step=(period):    out=max_value       out heading down
+    #                 offset = 1:
+    #                     - step=0:           out=max_value/2     out heading down
+    #                     - step=(period/2):  out=max_value/2     out heading up
+    #                 offset = 2:
+    #                     - step=0:           out=min_value       out heading up
+    #                     - step=(period/2):  out=max_value       out heading down
+    #                 offset = 3:
+    #                     - step=0:           out=max_value/2     out heading up
+    #                     - step=(period/2):  out=max_value/2     out heading down
+    #                     '''
+    # cyc_horiz.add_argument(
+    #     '-p',
+    #     '--period',
+    #     dest='period',
+    #     nargs=3,
+    #     type=int,
+    #     help='''
+    #     The number of steps required to finish one complete cycle of the sine
+    #     wave. 
+    #     '''
+    # )
+    # cyc_horiz.add_argument(
+    #     '-o',
+    #     '--offset',
+    #     dest='offset',
+    #     nargs=3,
+    #     type=float,
+    #     help='''
+    #     Three floats corresponding to the offset for the red, green, and blue
+    #     components.
+    #     The amount, in units of pi/2, by which the sine wave we're generating 
+    #     should be shifted to the left. The function is set so that with an
+    #     offset of 0, the sine wave will begin at its maximum value. If offset is
+    #     2, it starts at its minimum value. 
+    #     '''
+    # )
+    # cyc_horiz.add_argument(
+    #     '-mv',
+    #     '--min-vals',
+    #     dest='min_vals',
+    #     nargs=3,
+    #     type=int,
+    #     help='''
+    #     Expects three integers corresponding to the smallest value we should
+    #     allow for the red, green, and blue components.
+    #     '''
+    # )
+    # cyc_horiz.add_argument(
+    #     '-mx',
+    #     '--max-vals',
+    #     dest='min_vals',
+    #     nargs=3,
+    #     type=int,
+    #     help='''
+    #     Expects three integers corresponding to the smallest value we should
+    #     allow for the red, green, and blue components.
+    #     '''
+    # )
+
+
+
+    # cyc_horiz.add_argument(
+    #     '-mf',
+    #     '--min-foreground-vals',
+    #     dest='min_foreground',
+    #     nargs=3,
+    #     type=int,
+    #     help='''
+    #     Expects three integers corresponding to the smallest value we should
+    #     allow for the red, green, and blue components of the foreground.
+    #     '''
+    # )
+    # cyc_horiz.add_argument(
+    #     '-mb',
+    #     '--min-background-vals',
+    #     dest='min_background',
+    #     nargs=3,
+    #     type=int,
+    #     help='''
+    #     Expects three integers corresponding to the smallest value we should
+    #     allow for the red, green, and blue components of the background.
+    #     '''
+    # )
+    # cyc_horiz.add_argument(
+    #     '-mxf',
+    #     '--max-foreground-vals',
+    #     dest='max_foreground',
+    #     nargs=3,
+    #     type=int,
+    #     help='''
+    #     Expects three integers corresponding to the largest value we should
+    #     allow for the red, green, and blue components of the foreground.
+    #     '''
+    # )
+    # cyc_horiz.add_argument(
+    #     '-mxb',
+    #     '--max-background-vals',
+    #     dest='max_background',
+    #     nargs=3,
+    #     type=int,
+    #     help='''
+    #     Expects three integers corresponding to the largest value we should
+    #     allow for the red, green, and blue components of the background.
+    #     '''
+    # )
+    
+    # ##########################
+    # # Vertical cyclic gradient
+    # ##########################
+    # cyc_vert = cycopts.add_parser(
+    #     'vertical',
+    #     aliases=['vertical-gradient', 'vert', 'vg']
+    # )
+    # cyc_vert.add_argument(
+    #     '-fi',
+    #     '--foreground-increment',
+    #     dest='foreground_increment',
+    #     nargs=3,
+    #     type=int,
+    #     help='''
+    #     Expects three integers corresponding to the amound by which the red,
+    #     green, and blue components of the foreground should be incremented
+    #     for each row in the text
+    #     '''
+    # )
+    # cyc_vert.add_argument(
+    #     '-bi',
+    #     '--background-increment',
+    #     dest='background_increment',
+    #     nargs=3,
+    #     type=int,
+    #     help='''
+    #     Expects three integers corresponding to the amound by which the red,
+    #     green, and blue components of the background should be incremented
+    #     for each row in the text 
+    #     '''
+    # )
+    # # Linear gradient:
+    # #     - start value
+    # #     - one of:
+    # #         - increment
+    # #         - stop value
+    # # Linear gradient 2d:
+    # #     - start value (x0, y0)
+    # #     - one of:
+    # #         - increment x, and increment y
+    # #         - stop value x, stop value y
+    # # Cycle:
+    # #     - start value
+    # #     - period
+    # #     - max value
+    # #     - min_value
 
     args = parser.parse_args()
     print(args)
