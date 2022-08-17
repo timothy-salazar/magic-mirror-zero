@@ -52,14 +52,14 @@ class ColorComponent:
             raise ValueError(f'''Invalid min_val/max_val pair passed to
             LinearColor class. min_val must be less than max_val.
             min_val: {min_val} max_val: {max_val}''')
+        self.max_val = max_val
+        self.min_val = min_val
         if not self.in_range(value):
             raise ValueError(f'''Invalid value passed to LinearColor class.
             Attempted to initialize with value {value} and valid range of
             {min_val}-{max_val}.''')
         self.value = int(value)
         self.inc = int(inc)
-        self.max_val = max_val
-        self.min_val = min_val
         self.step = 0
         # for bouncing
         self.bounce = bounce

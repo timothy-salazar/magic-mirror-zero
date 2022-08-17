@@ -16,7 +16,6 @@
 # I may revisit it at a later date.
 
 import sys
-# import click # SOOOON
 import argparse
 # import math
 from utilities.color_tracker import LinearColorTracker
@@ -167,6 +166,83 @@ def apply_gradient(
         formatted_text += '\n'
     return formatted_text
 
+def gradient(
+        text,
+        foreground: tuple = None,
+        background: tuple = None,
+        h_foreground_increment: tuple = None,
+        v_foreground_increment: tuple = None,
+        h_background_increment: tuple = None,
+        v_background_increment: tuple = None,
+        foreground_min_val: tuple = None,
+        foreground_max_val: tuple = None,
+        background_min_val: tuple = None,
+        background_max_val: tuple = None,
+        bounce: bool = False
+        ):
+    """ Input:
+            text: str - the text we want to apply formatting to.
+            foreground: tuple of 3 ints - the initial values of the red, green,
+                and blue components of the foreground.
+            background: tuple of 3 ints - the initial values of the red, green,
+                and blue components of the background.
+            h_foreground_increment: tuple of 3 ints - the amount by which the 
+                red, green, and blue components of the foreground should be 
+                incremented for each column.
+            v_foreground_increment: tuple of 3 ints - the amount by which the 
+                red, green, and blue components of the foreground should be 
+                incremented for each row.
+            h_background_increment: tuple of 3 ints - the amount by which the 
+                red, green, and blue components of the background should be 
+                incremented for each column.
+            v_background_increment: tuple of 3 ints - the amount by which the 
+                red, green, and blue components of the background should be 
+                incremented for each row.
+            foreground_min_val: tuple of 3 ints - the smallest magnitude that
+                we want the red, green, and blue components of the foreground to
+                be able to reach.
+            background_min_val: tuple of 3 ints - the smallest magnitude that
+                we want the red, green, and blue components of the background to
+                be able to reach.
+            foreground_max_val: tuple of 3 ints - the largest magnitude that
+                we want the red, green, and blue components of the foreground to
+                be able to reach.
+            background_max_val: tuple of 3 ints - the largest magnitude that
+                we want the red, green, and blue components of the background to
+                be able to reach.
+            bounce: bool - if False, when the magnitude of a color component
+                reaches min_val or max_val, it will stay there. If True,
+                the color component will "bounce off the wall", and the
+                magnitude of the color component will begin to move in the
+                opposite direction
+        Output:
+            returns the text with the gradient specified applied to the
+            foreground and/or the background, in the horizontal and/or vertical
+            direction.
+    """
+    foreground_gradient = LinearColorTracker(
+        foreground,
+        h_foreground_increment,
+        v_foreground_increment,
+        foreground_min_val,
+        foreground_max_val,
+        bounce
+    )
+    background_gradient = LinearColorTracker(
+        background,
+        h_background_increment,
+        v_background_increment,
+        background_min_val,
+        background_max_val,
+        bounce
+    )
+    formatted_text = apply_gradient(
+        text,
+        foreground_gradient,
+        background_gradient
+    )
+    return formatted_text
+
 ##
 # I may come back to this at some point, but I don't think the returns are
 # worth the additional complexity
@@ -211,27 +287,10 @@ def apply_gradient(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('infile', nargs='?', type=argparse.FileType('r'),
-                    default=sys.stdin)
-    parser.add_argument('outfile', nargs='?', type=argparse.FileType('w'),
-                    default=sys.stdout)
     # In the future I might make it possible to specify rgb_mode for background
     # and color_lookup mode for foreground (or vice versus), but for now it's
     # one or the other
     # TODO: add styling options (bold, italics, etc.)
-    # TODO: allow FANCY options, like color gradients.
-    # group = parser.add_mutually_exclusive_group()
-    # group.add_argument(
-    #     '-r',
-    #     '--rgb-mode',
-    #     help='''
-    #     This is the default behavior of the program.
-    #     Sets the program to "RGB" mode. Foreground and background colors are to
-    #     be specified as sets of comma separated integers in the range 0-255.
-    #     Valid examples:
-    #     "0,0,255", ",,255", "0, 0, 255"
-    #     ''',
-    #     action='store_true')
     parser.add_argument(
         '-c',
         '--color-lookup',
@@ -264,397 +323,132 @@ if __name__ == "__main__":
         i.e. --background 0 75 200
         ''',
         dest='background',
-        type=str)
-    subparsers = parser.add_subparsers()
+        nargs=3,
+        type=int)
+    subparsers = parser.add_subparsers(dest='grad')
+
     ##################
     # Linear gradient:
     ##################
-    #   |              |- foreground -| ...
-    #   |              |
-    #   |- horizontal -|              |- red
-    #   |              |- background -|- green
-    #   |                             |- blue
-    #   |- vertical ---| ...
-    #
-    # linear = subparsers.add_parser(
-    #     'linear',
-    #     aliases=['lg']
-    # )
-    # linear.add_argument('-t')
-    # linear = linear.add_subparsers()
-    # linear = subparsers.add_parser('linear', aliases=['lg'])
-
-    ############################
-    # Horizontal linear gradient
-    ############################
-    horizontal = subparsers.add_parser(
-        'horizontal-gradient',
-        aliases=['horiz', 'hg']
+    grad = subparsers.add_parser(
+        'gradient',
+        aliases=['grad', 'g'],
     )
-    # If you're reading this, and you know a way to avoid copy/pasting these
-    # options over and over again, let me know. pls.
-    horizontal.add_argument(
-        '-f',
-        '--foreground-increment',
+
+    grad.add_argument(
+        '-fih',
+        '--fg-inc-horiz',
         dest='h_foreground_increment',
         nargs=3,
         type=int,
         help='''
-        Expects three integers corresponding to the amound by which the red,
+        Expects three integers corresponding to the amount by which the red,
         green, and blue components of the foreground should be incremented for
         each column in the text
         '''
     )
-    horizontal.add_argument(
-        '-b',
-        '--background-increment',
+    grad.add_argument(
+        '-bih',
+        '--bg-inc-horiz',
         dest='h_background_increment',
         nargs=3,
         type=int,
         help='''
-        Expects three integers corresponding to the amound by which the red,
+        Expects three integers corresponding to the amount by which the red,
         green, and blue components of the background should be incremented for
         each column in the text
         '''
     )
-    ##########################
-    # Vertical linear gradient
-    ##########################
-    vertical = subparsers.add_parser(
-        'vertical-gradient',
-        aliases=['vert', 'vg']
-    )
-    vertical.add_argument(
-        '-f',
-        '--foreground-increment',
+    grad.add_argument(
+        '-fiv',
+        '--fg-inc-vert',
         dest='v_foreground_increment',
         nargs=3,
         type=int,
         help='''
-        Expects three integers corresponding to the amound by which the red,
+        Expects three integers corresponding to the amount by which the red,
         green, and blue components of the foreground should be incremented
         for each row in the text
         '''
     )
-    vertical.add_argument(
-        '-b',
-        '--background-increment',
+    grad.add_argument(
+        '-biv',
+        '--bg-inc-vert',
         dest='v_background_increment',
         nargs=3,
         type=int,
         help='''
-        Expects three integers corresponding to the amound by which the red,
+        Expects three integers corresponding to the amount by which the red,
         green, and blue components of the background should be incremented
         for each row in the text
         '''
     )
-
-
+    grad.add_argument(
+        '-fmin',
+        '--fg-min-values',
+        dest='fg_min_values',
+        nargs=3,
+        type=int,
+        help='''
+        Expects three integers corresponding to the minimum values for the red,
+        green, and blue components of the foreground
+        '''
+    )
+    grad.add_argument(
+        '-bmin',
+        '--bg-min-values',
+        dest='bg_min_values',
+        nargs=3,
+        type=int,
+        help='''
+        Expects three integers corresponding to the minimum values for the red,
+        green, and blue components of the background
+        '''
+    )
+    grad.add_argument(
+        '-fmax',
+        '--fg-max-values',
+        dest='fg_max_values',
+        nargs=3,
+        type=int,
+        help='''
+        Expects three integers corresponding to the maximum values for the red,
+        green, and blue components of the foreground
+        '''
+    )
+    grad.add_argument(
+        '-bmax',
+        '--bg-max-values',
+        dest='bg_max_values',
+        nargs=3,
+        type=int,
+        help='''
+        Expects three integers corresponding to the maximum values for the red,
+        green, and blue components of the background
+        '''
+    )
     args = parser.parse_args()
-    print(args)
-    intext = args.infile.read()
-    if not args.color_lookup:
+    # print('\n', '-'*20, '\n', args)
+    
+    intext = sys.stdin.read()
+    if args.grad:
+        ftext = gradient(
+            intext,
+            args.foreground,
+            args.background,
+            args.h_foreground_increment,
+            args.v_foreground_increment,
+            args.h_background_increment,
+            args.v_background_increment,
+            args.fg_min_values,
+            args.fg_max_values,
+            args.bg_min_values,
+            args.bg_max_values
+        )
+    elif not args.color_lookup:
         ftext = color_text('rgb', intext, args.foreground, args.background)
     else:
         ftext = color_text('color_lookup', intext,
                             args.foreground, args.background)
-    args.outfile.write(ftext)
 
-
-"""
-
-
-
-
-
-
-
-
-    ##################
-    # Cylic gradient:
-    ##################
-    #
-    # This part of the parser is UGLY because we need to enable the user to
-    # specify period, min_value, max_value, and offset for:
-    #   - direction (horizontal, vertical)
-    #       - foreground vs. background
-    #           - color component (r,g,b)
-    # This requires a lot of subparsers
-
-    # OK, this is officially gross enough that I'm going to use another library.
-    # Click seems cool.
-    cyclic = subparsers.add_parser(
-        'cyclic-gradient',
-        aliases=['cyclic-gradient', 'cg']
-    )
-    cycsubs = cyclic.add_subparsers()
-
-    # Direction
-    cyc_horiz = cycsubs.add_parser(
-        'horizontal',
-        aliases=['horizontal-gradient', 'horiz', 'hg']
-    )
-    cyc_vert = cycsubs.add_parser(
-        'vertical',
-        aliases=['vertical-gradient', 'vert', 'vg']
-    )
-    subparser_list = []
-    parser_list = []
-    for parse in [cyc_vert, cyc_horiz]:
-        subparser_list.append(parse.add_subparsers())
-        parser_list.append(
-            subparser_list[-1].add_parser(
-                'foreground',
-                aliases=['fg']
-            )
-        )
-        parser_list.append(
-            subparser_list[-1].add_parser(
-                'background',
-                aliases=['bg']
-            )
-        )
-    for p in parser_list:
-        p.add_argument(
-            '-p',
-            '--period',
-            dest='period',
-            nargs=3,
-            type=int,
-            help='''
-            The number of steps required to finish one complete cycle of the
-            sine wave.
-            '''
-        )
-        p.add_argument(
-            '-o',
-            '--offset',
-            dest='offset',
-            nargs=3,
-            type=float,
-            help='''
-            Three floats corresponding to the offset for the red, green, and
-            blue components.
-            The amount, in units of pi/2, by which the sine wave we're
-            generating should be shifted to the left. The function is set so
-            that with an offset of 0, the sine wave will begin at its maximum
-            value. If offset is 2, it starts at its minimum value.
-            '''
-        )
-        p.add_argument(
-            '-mv',
-            '--min-vals',
-            dest='min_vals',
-            nargs=3,
-            type=int,
-            help='''
-            Expects three integers corresponding to the smallest value we should
-            allow for the red, green, and blue components.
-            '''
-        )
-        p.add_argument(
-            '-mx',
-            '--max-vals',
-            dest='min_vals',
-            nargs=3,
-            type=int,
-            help='''
-            Expects three integers corresponding to the smallest value we should
-            allow for the red, green, and blue components.
-            '''
-        )
-
-
-
-    # args = parser.parse_args()
-    # print(args)
-    # intext = args.infile.read()
-    # if not args.color_lookup:
-    #     ftext = color_text('rgb', intext, args.foreground, args.background)
-    # else:
-    #     ftext = color_text('color_lookup', intext,
-    #                         args.foreground, args.background)
-    # args.outfile.write(ftext)
-
-
-
-
-    # cyclic = subparsers.add_parser(
-    #     'cyclic-gradient',
-    #     aliases=['cyclic-gradient', 'cg']
-    # )
-    # cycopts = cyclic.add_subparsers()
-    # ############################
-    # # Horizontal linear gradient
-    # ############################
-    # cyc_horiz = cycopts.add_parser(
-    #     'horizontal',
-    #     aliases=['horizontal-gradient', 'horiz', 'hg']
-    # )
-    # '''
-    #         period: int - the number of steps before we finish one complete
-    #             cycle of the sine wave.
-    #         min_value: int - the minimum value allowed for 'out'
-    #         max_value: int - the maximum value allowed for 'out'
-    #         offset: int or float - the amount, in units of pi/2, by which the
-    #             sine wave we're generating should be shifted to the left. Some
-    #             sample values:
-    #                 offset = 0:
-    #                     - step=0:           out=max_value       out heading down
-    #                     - step=(period/2):  out=min_value       out heading up
-    #                     - step=(period):    out=max_value       out heading down
-    #                 offset = 1:
-    #                     - step=0:           out=max_value/2     out heading down
-    #                     - step=(period/2):  out=max_value/2     out heading up
-    #                 offset = 2:
-    #                     - step=0:           out=min_value       out heading up
-    #                     - step=(period/2):  out=max_value       out heading down
-    #                 offset = 3:
-    #                     - step=0:           out=max_value/2     out heading up
-    #                     - step=(period/2):  out=max_value/2     out heading down
-    #                     '''
-    # cyc_horiz.add_argument(
-    #     '-p',
-    #     '--period',
-    #     dest='period',
-    #     nargs=3,
-    #     type=int,
-    #     help='''
-    #     The number of steps required to finish one complete cycle of the sine
-    #     wave.
-    #     '''
-    # )
-    # cyc_horiz.add_argument(
-    #     '-o',
-    #     '--offset',
-    #     dest='offset',
-    #     nargs=3,
-    #     type=float,
-    #     help='''
-    #     Three floats corresponding to the offset for the red, green, and blue
-    #     components.
-    #     The amount, in units of pi/2, by which the sine wave we're generating
-    #     should be shifted to the left. The function is set so that with an
-    #     offset of 0, the sine wave will begin at its maximum value. If offset is
-    #     2, it starts at its minimum value.
-    #     '''
-    # )
-    # cyc_horiz.add_argument(
-    #     '-mv',
-    #     '--min-vals',
-    #     dest='min_vals',
-    #     nargs=3,
-    #     type=int,
-    #     help='''
-    #     Expects three integers corresponding to the smallest value we should
-    #     allow for the red, green, and blue components.
-    #     '''
-    # )
-    # cyc_horiz.add_argument(
-    #     '-mx',
-    #     '--max-vals',
-    #     dest='min_vals',
-    #     nargs=3,
-    #     type=int,
-    #     help='''
-    #     Expects three integers corresponding to the smallest value we should
-    #     allow for the red, green, and blue components.
-    #     '''
-    # )
-
-
-
-    # cyc_horiz.add_argument(
-    #     '-mf',
-    #     '--min-foreground-vals',
-    #     dest='min_foreground',
-    #     nargs=3,
-    #     type=int,
-    #     help='''
-    #     Expects three integers corresponding to the smallest value we should
-    #     allow for the red, green, and blue components of the foreground.
-    #     '''
-    # )
-    # cyc_horiz.add_argument(
-    #     '-mb',
-    #     '--min-background-vals',
-    #     dest='min_background',
-    #     nargs=3,
-    #     type=int,
-    #     help='''
-    #     Expects three integers corresponding to the smallest value we should
-    #     allow for the red, green, and blue components of the background.
-    #     '''
-    # )
-    # cyc_horiz.add_argument(
-    #     '-mxf',
-    #     '--max-foreground-vals',
-    #     dest='max_foreground',
-    #     nargs=3,
-    #     type=int,
-    #     help='''
-    #     Expects three integers corresponding to the largest value we should
-    #     allow for the red, green, and blue components of the foreground.
-    #     '''
-    # )
-    # cyc_horiz.add_argument(
-    #     '-mxb',
-    #     '--max-background-vals',
-    #     dest='max_background',
-    #     nargs=3,
-    #     type=int,
-    #     help='''
-    #     Expects three integers corresponding to the largest value we should
-    #     allow for the red, green, and blue components of the background.
-    #     '''
-    # )
-
-    # ##########################
-    # # Vertical cyclic gradient
-    # ##########################
-    # cyc_vert = cycopts.add_parser(
-    #     'vertical',
-    #     aliases=['vertical-gradient', 'vert', 'vg']
-    # )
-    # cyc_vert.add_argument(
-    #     '-fi',
-    #     '--foreground-increment',
-    #     dest='foreground_increment',
-    #     nargs=3,
-    #     type=int,
-    #     help='''
-    #     Expects three integers corresponding to the amound by which the red,
-    #     green, and blue components of the foreground should be incremented
-    #     for each row in the text
-    #     '''
-    # )
-    # cyc_vert.add_argument(
-    #     '-bi',
-    #     '--background-increment',
-    #     dest='background_increment',
-    #     nargs=3,
-    #     type=int,
-    #     help='''
-    #     Expects three integers corresponding to the amound by which the red,
-    #     green, and blue components of the background should be incremented
-    #     for each row in the text
-    #     '''
-    # )
-    # # Linear gradient:
-    # #     - start value
-    # #     - one of:
-    # #         - increment
-    # #         - stop value
-    # # Linear gradient 2d:
-    # #     - start value (x0, y0)
-    # #     - one of:
-    # #         - increment x, and increment y
-    # #         - stop value x, stop value y
-    # # Cycle:
-    # #     - start value
-    # #     - period
-    # #     - max value
-    # #     - min_value
-
-
-"""
+    sys.stdout.write(ftext)
