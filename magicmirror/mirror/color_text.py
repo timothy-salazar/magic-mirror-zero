@@ -16,10 +16,19 @@
 # I may revisit it at a later date.
 
 import sys
+# import click # SOOOON
 import argparse
-import math
+# import math
+from utilities.color_tracker import LinearColorTracker
 
-def format_rgb(char, rf=0, gf=0, bf=0, rb=0, gb=0, bb=0):
+def format_rgb(
+        char: str,
+        rf: int = 0,
+        gf: int = 0,
+        bf: int = 0,
+        rb: int = 0,
+        gb: int = 0,
+        bb: int = 0):
     """ Input:
             char: str - the character we want to format.
             rf: int - the red component of the foreground
@@ -53,7 +62,10 @@ def format_rgb(char, rf=0, gf=0, bf=0, rb=0, gb=0, bb=0):
     formatted_string += f'm{char}\033[0m'
     return formatted_string
 
-def format_by_lookup(char, foreground=None, background=None):
+def format_by_lookup(
+        char: str,
+        foreground: int = None,
+        background: int = None):
     """ Input:
             char: str - the character we want to format
             foreground: int - a number indicating a color in the system's
@@ -84,53 +96,21 @@ def format_by_lookup(char, foreground=None, background=None):
     formatted_string += f'm{char}\033[0m'
     return formatted_string
 
-# I'm a little sad to murder this function, but by using argparse's
-# functionality to require a list of three integers, I can avoid doing a lot
-# of this gross validation
-#
-# def parse_rgb(rgb):
-#     """ Input:
-#             rgb: str or none - a string representing a comma separated list of
-#                 rgb values
-#         Output:
-#             returns a tuple of rgb values.
-#             If 'rgb' was None, this function returns the tuple (0,0,0)
-#     """
-#     if not rgb:
-#         return (0, 0, 0)
-#     rgb_split = rgb.split(',')
-#     # This is so if the user passes an invalid string, the function breaks in an
-#     # informative way.
-#     if len(rgb_split) != 3:
-#         rgb_len = len(rgb_split)
-#         raise ValueError(f'''
-#                 Expected a comma separated string of 3 integers corresponding to 
-#                 an RGB value. Instead received a comma separated string of 
-#                 {rgb_len} values: {rgb}
-#                 Be chastised! Repent your sins and pass only valid inputs to
-#                 this humble parse_rgb() function!''')
-#     if not all([i.isdecimal for i in rgb_split]):
-#         raise ValueError(f'''
-#                 Expected a comma separated string of 3 integers corresponding to
-#                 an RGB value. Some of the values received were not integers:
-#                 {rgb}
-#                 Know that you have trespassed against the dignity of this humble
-#                 parse_rgb() function, which wishes only to receive valid inputs
-#                 that it might do its job well!''')
-#     rgb_split = [int(i) if i else 0 for i in rgb_split]
-#     return tuple(rgb_split)
-
-
-def color_text(mode, text, foreground=None, background=None):
+def color_text(
+        mode: str,
+        text: str,
+        foreground: tuple or int = None,
+        background: tuple or int = None):
     """ Input:
             mode: str - either 'rgb' or 'color_lookup'
             text: str - the text we want to format
-            foreground: str - the color we want to apply to the foreground.
-                Either a comma separated list integers corresponding to an rgb
-                value (if mode is 'rgb'), or an integer corresponding to a
-                color in the system's 256-color lookup table (if mode is
-                'color_lookup)
-            background: str - the color we want to apply to the background
+            foreground: tuple of ints or int - the color we want to apply to the
+                foreground.
+                Either a tuple of integers value (if mode is 'rgb'), or an
+                integer corresponding to a color in the system's 256-color
+                lookup table (if mode is 'color_lookup)
+            background: tuple of ints or int - the color we want to apply to the
+                background.
         Output:
             formatted_text: str - the text specified by 'text', formatted with
                 the foreground and/or background colors specified by the user.
@@ -138,7 +118,7 @@ def color_text(mode, text, foreground=None, background=None):
     Note that there will be a newline at the end of formatted_text, even if the
     user provided a string containing no newlines. This isn't an issue for
     values passed to update_mirror.py, but it might cause problems if you're
-    writing other functions and you don't expect the behavior. 
+    writing other functions and you don't expect the behavior.
     """
     formatted_text = ''
     if mode == 'rgb':
@@ -156,43 +136,78 @@ def color_text(mode, text, foreground=None, background=None):
             formatted_text += '\n'
     return formatted_text
 
-def cycle_gradient(step, period, min_value, max_value, offset):
+def apply_gradient(
+        text: str,
+        foreground: LinearColorTracker,
+        background: LinearColorTracker
+        ):
     """ Input:
-            step: int - the current step of the row or column (depending on
-                whether this is being used for a vertical or horizontal
-                gradient)
-            period: int - the number of steps before we finish one complete
-                cycle of the sine wave.
-            min_value: int - the minimum value allowed for 'out'
-            max_value: int - the maximum value allowed for 'out'
-            offset: int or float - the amount, in units of pi/2, by which the
-                sine wave we're generating should be shifted to the left. Some
-                sample values:
-                    offset = 0:
-                        - step=0:           out=max_value       out heading down
-                        - step=(period/2):  out=min_value       out heading up
-                        - step=(period):    out=max_value       out heading down
-                    offset = 1:
-                        - step=0:           out=max_value/2     out heading down
-                        - step=(period/2):  out=max_value/2     out heading up
-                    offset = 2:
-                        - step=0:           out=min_value       out heading up
-                        - step=(period/2):  out=max_value       out heading down
-                    offset = 3:
-                        - step=0:           out=max_value/2     out heading up
-                        - step=(period/2):  out=max_value/2     out heading down
+            text: str - the text we want to apply formatting to.
+            foreground: LinearColorTracker - the color tracker that's handling
+                the foreground. Will apply the horizontal and/or vertical
+                gradients that were specified by the user, while keeping the
+                magnitude within valid range.
+            backgorund: LinearColorTracker - the color tracker that's handling
+                the background.
         Output:
-            out: int - the value of a sine wave with a period of 'period' steps,
-                whose values fall between 'max_value' and 'min_value', for
-                step = 'step'
+            formatted_text: str - the text specified by 'text', formatted with
+                the foreground and/or background that move through the color
+                gradient provided by the user
     """
-    period_term = (math.pi*2*(1/period))
-    h_offset = (math.pi/2)*(offset+1)
-    amplitude = ((max_value - min_value)/2)
-    v_offset = ((max_value + min_value)/2)
+    formatted_text = ''
+    for line in text.split('\n'):
+        for char in line:
+            formatted_text += format_rgb(
+                char,
+                *foreground.__next__(),
+                *background.__next__(),
+                )
+        foreground.newline()
+        background.newline()
+        formatted_text += '\n'
+    return formatted_text
 
-    out = int((math.sin((period_term * step) + h_offset))*amplitude + v_offset)
-    return out
+##
+# I may come back to this at some point, but I don't think the returns are
+# worth the additional complexity
+## 
+# def cycle_gradient(step, period, min_value, max_value, offset):
+#     """ Input:
+#             step: int - the current step of the row or column (depending on
+#                 whether this is being used for a vertical or horizontal
+#                 gradient)
+#             period: int - the number of steps before we finish one complete
+#                 cycle of the sine wave.
+#             min_value: int - the minimum value allowed for 'out'
+#             max_value: int - the maximum value allowed for 'out'
+#             offset: int or float - the amount, in units of pi/2, by which the
+#                 sine wave we're generating should be shifted to the left. Some
+#                 sample values:
+#                     offset = 0:
+#                         - step=0:           out=max_value       out heading down
+#                         - step=(period/2):  out=min_value       out heading up
+#                         - step=(period):    out=max_value       out heading down
+#                     offset = 1:
+#                         - step=0:           out=max_value/2     out heading down
+#                         - step=(period/2):  out=max_value/2     out heading up
+#                     offset = 2:
+#                         - step=0:           out=min_value       out heading up
+#                         - step=(period/2):  out=max_value       out heading down
+#                     offset = 3:
+#                         - step=0:           out=max_value/2     out heading up
+#                         - step=(period/2):  out=max_value/2     out heading down
+#         Output:
+#             out: int - the value of a sine wave with a period of 'period' steps,
+#                 whose values fall between 'max_value' and 'min_value', for
+#                 step = 'step'
+#     """
+#     period_term = (math.pi*2*(1/period))
+#     h_offset = (math.pi/2)*(offset+1)
+#     amplitude = ((max_value - min_value)/2)
+#     v_offset = ((max_value + min_value)/2)
+
+#     out = int((math.sin((period_term * step) + h_offset))*amplitude + v_offset)
+#     return out
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -221,10 +236,10 @@ if __name__ == "__main__":
         '-c',
         '--color-lookup',
         help='''
-        Sets the program to "color_lookup" mode. 
-        In this mode foreground and background colors are to be specified by 
-        a number in the system's 256-color lookup table. 
-        See: 
+        Sets the program to "color_lookup" mode.
+        In this mode foreground and background colors are to be specified by
+        a number in the system's 256-color lookup table.
+        See:
         https://en.wikipedia.org/wiki/ANSI_escape_code#3-bit_and_4-bit
         ''',
         action='store_true'
@@ -261,23 +276,25 @@ if __name__ == "__main__":
     #   |                             |- blue
     #   |- vertical ---| ...
     #
-    linear = subparsers.add_parser(
-        'linear-gradient',
-        aliases=['linear', 'lg', 'l']
-    )
-    sublin = linear.add_subparsers()
+    # linear = subparsers.add_parser(
+    #     'linear',
+    #     aliases=['lg']
+    # )
+    # linear.add_argument('-t')
+    # linear = linear.add_subparsers()
+    # linear = subparsers.add_parser('linear', aliases=['lg'])
 
     ############################
     # Horizontal linear gradient
     ############################
-    horizontal = sublin.add_parser(
-        'horizontal',
-        aliases=['horizontal-gradient', 'horiz', 'hg']
+    horizontal = subparsers.add_parser(
+        'horizontal-gradient',
+        aliases=['horiz', 'hg']
     )
     # If you're reading this, and you know a way to avoid copy/pasting these
     # options over and over again, let me know. pls.
     horizontal.add_argument(
-        '-fi',
+        '-f',
         '--foreground-increment',
         dest='h_foreground_increment',
         nargs=3,
@@ -289,7 +306,7 @@ if __name__ == "__main__":
         '''
     )
     horizontal.add_argument(
-        '-bi',
+        '-b',
         '--background-increment',
         dest='h_background_increment',
         nargs=3,
@@ -303,12 +320,12 @@ if __name__ == "__main__":
     ##########################
     # Vertical linear gradient
     ##########################
-    vertical = sublin.add_parser(
-        'vertical',
-        aliases=['vertical-gradient', 'vert', 'vg']
+    vertical = subparsers.add_parser(
+        'vertical-gradient',
+        aliases=['vert', 'vg']
     )
     vertical.add_argument(
-        '-fi',
+        '-f',
         '--foreground-increment',
         dest='v_foreground_increment',
         nargs=3,
@@ -320,7 +337,7 @@ if __name__ == "__main__":
         '''
     )
     vertical.add_argument(
-        '-bi',
+        '-b',
         '--background-increment',
         dest='v_background_increment',
         nargs=3,
@@ -328,15 +345,23 @@ if __name__ == "__main__":
         help='''
         Expects three integers corresponding to the amound by which the red,
         green, and blue components of the background should be incremented
-        for each row in the text 
+        for each row in the text
         '''
     )
 
 
+    args = parser.parse_args()
+    print(args)
+    intext = args.infile.read()
+    if not args.color_lookup:
+        ftext = color_text('rgb', intext, args.foreground, args.background)
+    else:
+        ftext = color_text('color_lookup', intext,
+                            args.foreground, args.background)
+    args.outfile.write(ftext)
 
 
-
-
+"""
 
 
 
@@ -397,8 +422,8 @@ if __name__ == "__main__":
             nargs=3,
             type=int,
             help='''
-            The number of steps required to finish one complete cycle of the 
-            sine wave. 
+            The number of steps required to finish one complete cycle of the
+            sine wave.
             '''
         )
         p.add_argument(
@@ -408,12 +433,12 @@ if __name__ == "__main__":
             nargs=3,
             type=float,
             help='''
-            Three floats corresponding to the offset for the red, green, and 
+            Three floats corresponding to the offset for the red, green, and
             blue components.
-            The amount, in units of pi/2, by which the sine wave we're 
-            generating should be shifted to the left. The function is set so 
-            that with an offset of 0, the sine wave will begin at its maximum 
-            value. If offset is 2, it starts at its minimum value. 
+            The amount, in units of pi/2, by which the sine wave we're
+            generating should be shifted to the left. The function is set so
+            that with an offset of 0, the sine wave will begin at its maximum
+            value. If offset is 2, it starts at its minimum value.
             '''
         )
         p.add_argument(
@@ -441,7 +466,15 @@ if __name__ == "__main__":
 
 
 
-
+    # args = parser.parse_args()
+    # print(args)
+    # intext = args.infile.read()
+    # if not args.color_lookup:
+    #     ftext = color_text('rgb', intext, args.foreground, args.background)
+    # else:
+    #     ftext = color_text('color_lookup', intext,
+    #                         args.foreground, args.background)
+    # args.outfile.write(ftext)
 
 
 
@@ -488,7 +521,7 @@ if __name__ == "__main__":
     #     type=int,
     #     help='''
     #     The number of steps required to finish one complete cycle of the sine
-    #     wave. 
+    #     wave.
     #     '''
     # )
     # cyc_horiz.add_argument(
@@ -500,10 +533,10 @@ if __name__ == "__main__":
     #     help='''
     #     Three floats corresponding to the offset for the red, green, and blue
     #     components.
-    #     The amount, in units of pi/2, by which the sine wave we're generating 
+    #     The amount, in units of pi/2, by which the sine wave we're generating
     #     should be shifted to the left. The function is set so that with an
     #     offset of 0, the sine wave will begin at its maximum value. If offset is
-    #     2, it starts at its minimum value. 
+    #     2, it starts at its minimum value.
     #     '''
     # )
     # cyc_horiz.add_argument(
@@ -575,7 +608,7 @@ if __name__ == "__main__":
     #     allow for the red, green, and blue components of the background.
     #     '''
     # )
-    
+
     # ##########################
     # # Vertical cyclic gradient
     # ##########################
@@ -604,7 +637,7 @@ if __name__ == "__main__":
     #     help='''
     #     Expects three integers corresponding to the amound by which the red,
     #     green, and blue components of the background should be incremented
-    #     for each row in the text 
+    #     for each row in the text
     #     '''
     # )
     # # Linear gradient:
@@ -623,12 +656,5 @@ if __name__ == "__main__":
     # #     - max value
     # #     - min_value
 
-    args = parser.parse_args()
-    print(args)
-    intext = args.infile.read()
-    if not args.color_lookup:
-        ftext = color_text('rgb', intext, args.foreground, args.background)
-    else:
-        ftext = color_text('color_lookup', intext,
-                            args.foreground, args.background)
-    args.outfile.write(ftext)
+
+"""
