@@ -22,14 +22,14 @@ class ColorComponent:
     def __init__(
             self,
             value: int = 0,
-            inc: int = 0,
+            inc: float = 0,
             min_val: int = 0,
             max_val: int = 255,
             bounce: bool = False):
         """ Input:
                 value: int - the initial value of the color component. Must be
                     an integer between min_val and max_val.
-                inc: int - the amount by which the magnitude of the color
+                inc: float - the amount by which the magnitude of the color
                     component should be incremented each time __next__() is
                     called. can be positive or negative.
                 min_val: int - the minimum magnitude we want the color component
@@ -59,7 +59,7 @@ class ColorComponent:
             Attempted to initialize with value {value} and valid range of
             {min_val}-{max_val}.''')
         self.value = int(value)
-        self.inc = int(inc)
+        self.inc = inc
         self.step = 0
         # for bouncing
         self.bounce = bounce
@@ -81,7 +81,13 @@ class ColorComponent:
                 val: int - the magnitude of the color component at the given
                     step.
         """
-        val = self.value + (step * self.inc)
+        # We're using round() here because I realized that there might
+        # _conceivably_ be cases where a component might increase by an itty-
+        # bitty amount, so I'm trying to make it alright for self.inc to be
+        # a float.
+        # We'll see - might revert later since the change in a component that
+        # increases by less than 1 each step is probably unnoticeable.
+        val = self.value + round(step * self.inc)
         if val > self.max_val:
             val = self.max_val
             self.flip_step()
@@ -173,7 +179,7 @@ class LinearColorTracker:
         self.newline()
 
     def __next__(self):
-        """ Returns a tuple of 3 ints, representing the state of the color.
+        """ Returns a tuple of 3 ints, representing state of the color.
         """
         r, g, b = (color.__next__() for color in self.horiz)
         return r, g, b

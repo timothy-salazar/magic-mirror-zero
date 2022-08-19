@@ -19,6 +19,7 @@ import sys
 import argparse
 # import math
 from utilities.color_tracker import LinearColorTracker
+from utilities.color_dict import color_dict
 
 def format_rgb(
         char: str,
@@ -45,10 +46,12 @@ def format_rgb(
     formatted_string = '\033['
     # This specifies the color for the foreground (i.e., the color of the text)
     # as a set of RGB colors.
-    # We're only adding this if necessary so we can avoid adding unnecessary
-    # text to our term.txt file.
-    if rf or gf or bf:
-        formatted_string += f'38;2;{rf};{gf};{bf};'
+    # The default foreground is white, so my original, naive idea for cutting
+    # back on the number of characters doesn't work. 
+    # TODO: Later, if I have time to look up default r,g,b value for foreground,
+    # I'll revisit this
+    # if rf or gf or bf:
+    formatted_string += f'38;2;{rf};{gf};{bf};'
     # This specifies the color of the background as a set of RGB values
     if rb or gb or bb:
         formatted_string += f'48;2;{rb};{gb};{bb};'
@@ -186,17 +189,17 @@ def gradient(
                 and blue components of the foreground.
             background: tuple of 3 ints - the initial values of the red, green,
                 and blue components of the background.
-            h_foreground_increment: tuple of 3 ints - the amount by which the 
-                red, green, and blue components of the foreground should be 
+            h_foreground_increment: tuple of 3 ints - the amount by which the
+                red, green, and blue components of the foreground should be
                 incremented for each column.
-            v_foreground_increment: tuple of 3 ints - the amount by which the 
-                red, green, and blue components of the foreground should be 
+            v_foreground_increment: tuple of 3 ints - the amount by which the
+                red, green, and blue components of the foreground should be
                 incremented for each row.
-            h_background_increment: tuple of 3 ints - the amount by which the 
-                red, green, and blue components of the background should be 
+            h_background_increment: tuple of 3 ints - the amount by which the
+                red, green, and blue components of the background should be
                 incremented for each column.
-            v_background_increment: tuple of 3 ints - the amount by which the 
-                red, green, and blue components of the background should be 
+            v_background_increment: tuple of 3 ints - the amount by which the
+                red, green, and blue components of the background should be
                 incremented for each row.
             foreground_min_val: tuple of 3 ints - the smallest magnitude that
                 we want the red, green, and blue components of the foreground to
@@ -243,10 +246,14 @@ def gradient(
     )
     return formatted_text
 
+def get_textbox_size(text):
+    """returns the dimensions of the textbox"""
+    l = text.split('\n')
+    return  max([len(i) for i in l]), len(l)
 ##
 # I may come back to this at some point, but I don't think the returns are
 # worth the additional complexity
-## 
+##
 # def cycle_gradient(step, period, min_value, max_value, offset):
 #     """ Input:
 #             step: int - the current step of the row or column (depending on
@@ -333,16 +340,27 @@ if __name__ == "__main__":
     grad = subparsers.add_parser(
         'gradient',
         aliases=['grad', 'g'],
-    )
+        help='''
+        This option allows the user to specify a linear gradient with an
+        excruciating degree of detail. There are 4 arguments each for specifying
+        the parameters of the foreground and background gradient, for a total of
+        8 arguments. Each of these arguments takes a tuple of three integers, which
+        means that you, dear user, may have the priviledge of entering a total
+        of 24 numbers, if you so desire. 
 
+        I'm including this option because it gives you the most control, but
+        unless you have something very specific in mind, you probably want to 
+        use one of the friendlier options. 
+        '''
+    )
     grad.add_argument(
         '-fih',
         '--fg-inc-horiz',
         dest='h_foreground_increment',
         nargs=3,
-        type=int,
+        type=float,
         help='''
-        Expects three integers corresponding to the amount by which the red,
+        Expects three ints/floats corresponding to the amount by which the red,
         green, and blue components of the foreground should be incremented for
         each column in the text
         '''
@@ -352,9 +370,9 @@ if __name__ == "__main__":
         '--bg-inc-horiz',
         dest='h_background_increment',
         nargs=3,
-        type=int,
+        type=float,
         help='''
-        Expects three integers corresponding to the amount by which the red,
+        Expects three ints/floats corresponding to the amount by which the red,
         green, and blue components of the background should be incremented for
         each column in the text
         '''
@@ -364,9 +382,9 @@ if __name__ == "__main__":
         '--fg-inc-vert',
         dest='v_foreground_increment',
         nargs=3,
-        type=int,
+        type=float,
         help='''
-        Expects three integers corresponding to the amount by which the red,
+        Expects three ints/floats corresponding to the amount by which the red,
         green, and blue components of the foreground should be incremented
         for each row in the text
         '''
@@ -376,9 +394,9 @@ if __name__ == "__main__":
         '--bg-inc-vert',
         dest='v_background_increment',
         nargs=3,
-        type=int,
+        type=float,
         help='''
-        Expects three integers corresponding to the amount by which the red,
+        Expects three ints/floats corresponding to the amount by which the red,
         green, and blue components of the background should be incremented
         for each row in the text
         '''
@@ -427,24 +445,180 @@ if __name__ == "__main__":
         green, and blue components of the background
         '''
     )
+    grad.add_argument(
+        '--bounce',
+        action='store_true',
+        help='''
+        The default behavior when the magnitude of a color component reaches 
+        either its min_val or max_val is for the color component to stay there. 
+        This argument causes the color component to "bounce off the wall" when
+        it reaches either min_val or max_val, at which point the magnitude of 
+        the color component will begin to move in the opposite direction.
+        '''
+    )
+    ########################
+    # Simple color gradients
+    ########################
+    # Being able to specify linear color gradients with an agonizing degree of
+    # control is nice and all, but let's add something a little more user
+    # friendly
+    preset = subparsers.add_parser(
+        'simple-gradient',
+        aliases=['sg', 's'],
+        help='''
+        This lets the user define a gradient in a pretty simple way. Just
+        specify two colors and the program will come up with a gradient that
+        transitions between them.
+        The default behavior is for the colors to transition across the width
+        and height of the text box - i.e., the text will be color-1 at the upper
+        left corner of the text box, and it will transition to color-2 at the
+        lower right corner. 
+        To transition
+        '''
+    )
+    preset.add_argument(
+        '-hz',
+        '--horizontal',
+        dest='horiz_only',
+        action='store_true',
+        help='''
+        Instead of applying a gradient from the top left to the bottom right of
+        the text box, the gradient will be applied horizontally. The left edge
+        of the text box will be color-1, and it will transition to color-2 at
+        the right edge.
+        '''
+    )
+    preset.add_argument(
+        '-v',
+        '--vertical',
+        dest='vert_only',
+        action='store_true',
+        help='''
+        Instead of applying a gradient from the top left to the bottom right of
+        the text box, the gradient will be applied vertically. The top edge
+        of the text box will be color-1, and it will transition to color-2 at
+        the bottom edge. 
+        '''
+    )
+    # TODO: 
+    # preset.add_argument(
+    #     '-rd',
+    #     '--reverse-diagonal',
+    #     dest='reverse_diagonal',
+    #     action='store_true',
+    #     help='''
+    #     Instead of applying a gradient from the top left to the bottom right of
+    #     the text box, the gradient will be applied from the top right to the
+    #     bottom left
+    #     '''
+    # )
+    preset.add_argument(
+        '-w',
+        '--width',
+        dest='width',
+        type=int,
+        help='''
+        The width of the text box. Used to calculate the step size for moving
+        neatly between two named colors. Defaults to the width of the text box
+        if not specified.
+        '''
+    )
+    preset.add_argument(
+        '-hg',
+        '--height',
+        dest='height',
+        type=int,
+        help='''
+        The height of the text box. Used to calculate the step size for moving
+        neatly between two named colors. Defaults to the height of the text box
+        if not specified.
+        '''
+    )
+    preset.add_argument(
+        '-c1',
+        '--color-1',
+        dest='color_1',
+        type=str,
+        choices=list(color_dict.keys()),
+        help='''
+        The first color. The text will be this color in the upper left corner.
+        ''',
+        default='limegreen'
+    )
+    preset.add_argument(
+        '-c2',
+        '--color-2',
+        dest='color_2',
+        type=str,
+        choices=list(color_dict.keys()),
+        help='''
+        The second color. The text will be this color in the lower right corner.
+        ''',
+        default='mediumblue'
+    )
+    preset.add_argument(
+        '--bounce',
+        action='store_true',
+        help='''
+        The default behavior when the magnitude of a color component reaches 
+        either its min_val or max_val is for the color component to stay there. 
+        This argument causes the color component to "bounce off the wall" when
+        it reaches either min_val or max_val, at which point the magnitude of 
+        the color component will begin to move in the opposite direction.
+        '''
+    )
     args = parser.parse_args()
-    # print('\n', '-'*20, '\n', args)
-    
+    print('\n', '-'*20, '\n', args)
+   
     intext = sys.stdin.read()
     if args.grad:
-        ftext = gradient(
-            intext,
-            args.foreground,
-            args.background,
-            args.h_foreground_increment,
-            args.v_foreground_increment,
-            args.h_background_increment,
-            args.v_background_increment,
-            args.fg_min_values,
-            args.fg_max_values,
-            args.bg_min_values,
-            args.bg_max_values
-        )
+        if args.grad in ['gradient', 'grad', 'g']:
+            ftext = gradient(
+                intext,
+                args.foreground,
+                args.background,
+                args.h_foreground_increment,
+                args.v_foreground_increment,
+                args.h_background_increment,
+                args.v_background_increment,
+                args.fg_min_values,
+                args.fg_max_values,
+                args.bg_min_values,
+                args.bg_max_values,
+                args.bounce
+            )
+        elif args.grad in ['simple_gradient', 'sg', 's']:
+            c1 = color_dict[args.color_1]
+            c2 = color_dict[args.color_2]
+            text_dims = get_textbox_size(intext)
+            if not args.width:
+                width = text_dims[0]
+            else:
+                width = args.width
+            if not args.height:
+                height = text_dims[1]
+            else:
+                height = args.height
+
+            if args.horiz_only:
+                h_fg_inc = tuple([((j-i)/width) for i, j in zip(c1, c2)])
+                v_fg_inc = (0, 0, 0)
+            elif args.vert_only:
+                h_fg_inc = (0, 0, 0)
+                v_fg_inc = tuple([((j-i)/height) for i, j in zip(c1, c2)])
+            else:
+                h_fg_inc = tuple([.5*((j-i)/width) for i, j in zip(c1, c2)])
+                v_fg_inc = tuple([.5*((j-i)/height) for i, j in zip(c1, c2)])
+
+            ftext = gradient(
+                text=intext,
+                foreground=c1,
+                h_foreground_increment=h_fg_inc,
+                v_foreground_increment=v_fg_inc,
+                bounce=args.bounce
+            )
+
+
     elif not args.color_lookup:
         ftext = color_text('rgb', intext, args.foreground, args.background)
     else:
