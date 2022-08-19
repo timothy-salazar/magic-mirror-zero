@@ -87,14 +87,14 @@ class ColorComponent:
         # a float.
         # We'll see - might revert later since the change in a component that
         # increases by less than 1 each step is probably unnoticeable.
-        val = self.value + round(step * self.inc)
+        val = self.value + (step * self.inc)
         if val > self.max_val:
             val = self.max_val
             self.flip_step()
         if val < self.min_val:
             val = self.min_val
             self.flip_step()
-        return int(val)
+        return int(round(val))
 
     def flip_step(self):
         """ This is used for the 'bounce' functionality. When it is called, it

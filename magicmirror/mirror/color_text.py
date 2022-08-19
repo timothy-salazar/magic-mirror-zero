@@ -601,14 +601,14 @@ if __name__ == "__main__":
                 height = args.height
 
             if args.horiz_only:
-                h_fg_inc = tuple([((j-i)/width) for i, j in zip(c1, c2)])
+                h_fg_inc = tuple([((j-i)/(width-1)) for i, j in zip(c1, c2)])
                 v_fg_inc = (0, 0, 0)
             elif args.vert_only:
                 h_fg_inc = (0, 0, 0)
-                v_fg_inc = tuple([((j-i)/height) for i, j in zip(c1, c2)])
+                v_fg_inc = tuple([((j-i)/(height-1)) for i, j in zip(c1, c2)])
             else:
-                h_fg_inc = tuple([.5*((j-i)/width) for i, j in zip(c1, c2)])
-                v_fg_inc = tuple([.5*((j-i)/height) for i, j in zip(c1, c2)])
+                h_fg_inc = tuple([.5*((j-i)/(width-1)) for i, j in zip(c1, c2)])
+                v_fg_inc = tuple([.5*((j-i)/(height-1)) for i, j in zip(c1, c2)])
 
             ftext = gradient(
                 text=intext,
