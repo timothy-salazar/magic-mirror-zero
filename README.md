@@ -8,6 +8,7 @@ This version will:
 As a trade off, this will have a largely text based display paradigm, with only crude graphics available.
 ## Requirements
 - figlet
+- jq
 
 
 ## Organization
