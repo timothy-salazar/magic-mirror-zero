@@ -110,6 +110,9 @@ def quick_7_day_formatting(
         col_padding: int = 5,
         alignment: str = 'left',
         include_current_period: bool = False,
+        include_tonight: bool = True,
+        start_index: int = 0,
+        end_index: int = -1,
         # TODO: temp_to_c: bool = False,
         include_day: bool = True,
         include_night: bool = False,
@@ -131,11 +134,22 @@ def quick_7_day_formatting(
                 if 'left', the text in the columns will be aligned to the left.
                 If 'right', thet text will be aligned to the right, and if
                 'center', it will be alligned in the center.
-                
             include_current_period: bool - if True, we include the current
                 period. If False, the current period is omitted.
                 This is here so you can make the current weather bigger and more
                 verbose.
+            include_tonight: bool - we might not want to include the forecast
+                for EVERY night, since space is at a premium and we don't
+                want to make our mirror too crowded with text, but it does
+                make sense to want to include tonight's forecast.
+                If true, we include tonight's forecast. If false, we handle it
+                as dictated by the include_day and include_night variables. 
+            start_index: int - after filtering has ocurred (removing night
+                periods, etc.), this is the index of the first item that should
+                be returned
+            end_index: int - after filtering has ocurred (removing night
+                periods, etc.), this is the index of the last item that should
+                be returned
             temp_to_c: bool - if True, the temperature is displayed in degrees
                 celsius. Otherwise it is displayed in degrees fahrenheit.
             include_day: bool - if True, we include the periods from 6am to 6pm.
@@ -167,30 +181,36 @@ def quick_7_day_formatting(
         Output:
             cols: list of lists - each entry is a list containing the strings
                 that make up the forecast column.
-    
+
     This returns a string containing a rough and dirty representation of the
     forecast.
     """
     periods = get_7_day_forecast()
     cols = []
-    if include_current_period:
-        period = periods.pop(0)
-        cols.append(
-            format_column(
-                period,
-                data_fields,
-                col_width))
     for period in periods:
-        if include_day and not period['isDaytime']:
+        # Including things that might be skipped otherwise
+        if include_current_period and (period['number'] == 1):
+            pass
+        elif include_tonight and (period['name'] == 'Tonight'):
+            pass
+        # Skipping things that we don't want to include
+        elif (not include_current_period) and (period['number'] == 1):
             continue
-        if include_night and period['isDaytime']:
+        elif (not include_day) and period['isDaytime']:
+            print('skipping day :D')
             continue
+        elif (not include_night) and (not period['isDaytime']):
+            print('skipping night :)')
+            continue
+        # Add everything that made it through the filter to our column list
         cols.append(
             format_column(
                 period,
                 data_fields,
                 col_width))
 
+    # We make a lambda function called 'just' which will pad our columns to
+    # the right length using the appropriate justification method.
     padded_width = col_width + col_padding
     if alignment == 'left':
         just = lambda x: x.ljust(padded_width) if x else ' '*(padded_width)
@@ -201,17 +221,28 @@ def quick_7_day_formatting(
     else:
         raise ValueError('''
         Invalid value for "alignment". Valid values are: left, right, center''')
+
+    # Here we're slicing the list if the user provided a start_index and
+    # end_index
+    cols = cols[start_index:end_index]
+    # Here we're limiting the number of columns returned
     cols = cols[:col_limit]
+    # This is a bit gross, but we're just turning our list of columns into
+    # one block of text
     just_cols = [''.join([just(j) for j in i]) for i in zip_longest(*cols)]
     return '\n'.join(just_cols)
 
-def format_column(period: int, data_fields: list, col_width: int):
+def format_column(period: dict, data_fields: list, col_width: int):
     """ Input:
             period: dict - the data for the period we want to format as a
                 column
             data_fields: list - the data fields we want to include in the
                 column
             col_width: int - the width of the column
+
+    This takes a dictionary that was returned by the API and formats it such
+    that it includes only the data fields specified by data_fields, and such
+    that the width of the column does not exceed col_width.
     """
     wrap = textwrap.TextWrapper(width=col_width)
     temp_template = '{temperature} º{temperatureUnit}'
@@ -230,6 +261,10 @@ def forecast_handler(args: argparse.Namespace):
                 argument parser
         Output:
             writes the forecast to stdout
+
+    This takes the CLI arguments provided by the user, and formats the forecast
+    using them. The forecast for each period is formatted to fit in a column,
+    and lal the columns are joined together to form one block of text.
     """
     if args.clear_fields:
         data_fields = []
@@ -247,10 +282,18 @@ def forecast_handler(args: argparse.Namespace):
     if args.remove_field_names:
         data_fields = [i for i in data_fields if i not in args.remove_field_names]
 
-    col_limit = args.number_of_columns
     forecast = quick_7_day_formatting(
-        col_limit=col_limit,
-        data_fields=data_fields
+        col_limit=args.col_limit,
+        col_width=args.col_width,
+        col_padding=args.col_padding,
+        alignment=args.alignment,
+        include_current_period=args.include_current_period,
+        include_tonight=args.include_tonight,
+        start_index=args.start,
+        end_index=args.end,
+        include_day=args.include_day,
+        include_night=args.include_night,
+        data_fields=data_fields,
     )
     sys.stdout.write(forecast)
 
@@ -258,23 +301,130 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    # parser.add_argument(
-    #     '-f',
-    #     '--forecast',
-    #     action='store_true')
     parser.add_argument(
         '-n',
         '--number-of-columns',
+        dest='col_limit',
         default=5,
         help='''
         The number of columns that should be returned. With the default
         behavior this will return one day's forecast per column.
         '''
     )
-
+    parser.add_argument(
+        '-w',
+        '--column-width',
+        dest='col_width',
+        type=int,
+        default=20,
+        help='''
+        the weather for each period will be given a column. This value
+        specifies the width of each column.
+        '''
+    )
+    parser.add_argument(
+        '-p',
+        '--column-padding',
+        dest='col_padding',
+        type=int,
+        default=5,
+        help='''The number of spaces separating each column from the next.
+        '''
+    )
+    parser.add_argument(
+        '-a',
+        '--alignment',
+        choices=['left', 'right', 'center'],
+        default='left',
+        help='''
+        This specifies how the text in the columns should be aligned. Valid
+        options are 'left','right', and 'center'.
+        '''
+    )
+    parser.add_argument(
+        '-c',
+        '--include-current-period',
+        action='store_true',
+        help='''
+        Whether the current weather should be included.
+        The default behavior is to not include the current weather so that it
+        can be displayed separately and be made bigger and more visible.
+        To return only the current weather, you would use: -c -n 1
+        '''
+    )
+    parser.add_argument(
+        '-rtn',
+        '--remove-tonight-exception',
+        dest='include_tonight',
+        action='store_false',
+        help='''
+        The default behavior of this program is to omit nighttime forecasts with
+        the exception of "tonight".
+        Space is at a premium, and we don't want to make our mirror too crowded
+        with text, but it does make sense to want to include tonight's forecast
+        (at least to this humble programmer).
+        This argument overrides that behavior, causing the "tonight" period to
+        be handled in the same way as any other period.
+        '''
+    )
+    parser.add_argument(
+        '-s',
+        '--start',
+        type=int,
+        default=0,
+        help='''
+        The API will return a number of periods. These will be filtered. With
+        the default behavior, the night values will be removed (with the 
+        exception of the forecast for "tonight").
+        This argument specifies the index of the first item in this list of
+        periods that should be included. With the default behavior, a value
+        of 0 would be the current time period, a value of 1 would be the next
+        daytime period, etc.
+        IMPORTANT: THIS HAPPENS AFTER EVERY OTHER OPERATION FILTERING THE PERIOD
+        LIST!
+        '''
+    )
+    parser.add_argument(
+        '-e',
+        '--end',
+        type=int,
+        default=-1,
+        help='''
+        The API will return a number of periods. 
+        This argument specifies the index of the last item in this list of
+        periods that should be included (note that the first item is 0).
+        IMPORTANT: THIS HAPPENS AFTER EVERY OTHER OPERATION FILTERING THE PERIOD
+        LIST!
+        '''
+    )
+    parser.add_argument(
+        '-inp',
+        '--include-night-periods',
+        action='store_true',
+        dest='include_night',
+        help='''
+        The default behavior of this progam is to omit nighttime forecast
+        periods with the exeption of "tonight".
+        This argument will cause the nighttime forecast periods to be included.
+        Note that this will cause the program to output a much larger block
+        of text. 
+        '''
+    )
+    parser.add_argument(
+        '-rdp',
+        '--remove-day-periods',
+        action='store_false',
+        dest='include_day',
+        help='''
+        The default behavior of this progam is to include daytime forecast
+        periods. This argument will cause the daytime periods to be omitted.
+        '''
+    )
+    ########################
+    # Specifying data fields
+    ########################
     field_names = parser.add_argument_group(
         title='Field Names',
-        
         description='''
         The user can override the default data fields using these arguments:
 
@@ -485,5 +635,4 @@ if __name__ == "__main__":
         dest='remove_field_names'
     )
     args = parser.parse_args()
-    # if args.forecast:
     forecast_handler(args)
