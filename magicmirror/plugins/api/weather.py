@@ -197,10 +197,8 @@ def quick_7_day_formatting(
         elif (not include_current_period) and (period['number'] == 1):
             continue
         elif (not include_day) and period['isDaytime']:
-            print('skipping day :D')
             continue
         elif (not include_night) and (not period['isDaytime']):
-            print('skipping night :)')
             continue
         # Add everything that made it through the filter to our column list
         cols.append(
