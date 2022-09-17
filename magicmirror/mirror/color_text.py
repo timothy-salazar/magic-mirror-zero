@@ -92,6 +92,7 @@ def format_by_lookup(
     # This removes the last semicolon from formatted_string.
     # It's just something we need to do so the ANSI sequences will be understood
     formatted_string = formatted_string[:-1]
+
     # This is the character we're coloring, as well as an escape sequence to
     # reset the terminal's behavior back to normal (otherwise the foreground/
     # backgroung colors would be applied to all the text from here on)
@@ -123,6 +124,7 @@ def color_text(
     writing other functions and you don't expect the behavior.
     """
     formatted_text = ''
+    # RGB mode
     if mode == 'rgb':
         rf, gf, bf = tuple(foreground) if foreground else (0, 0, 0)
         rb, gb, bb = tuple(background) if background else (0, 0, 0)
@@ -130,12 +132,17 @@ def color_text(
             for char in line:
                 formatted_text += format_rgb(char, rf, gf, bf, rb, gb, bb)
             formatted_text += '\n'
-
+    # Color lookup mode
     elif mode == 'color_lookup':
         for line in text.split('\n'):
             for char in line:
+                if isinstance(foreground, list):
+                    foreground = foreground[0]
+                if isinstance(background, list):
+                    background = background[0]
                 formatted_text += format_by_lookup(char, foreground, background)
             formatted_text += '\n'
+
     return formatted_text
 
 def apply_gradient(
@@ -298,6 +305,16 @@ if __name__ == "__main__":
     # and color_lookup mode for foreground (or vice versus), but for now it's
     # one or the other
     # TODO: add styling options (bold, italics, etc.)
+    # parser.add_argument(
+    #     '-s',
+    #     '--style',
+    #     action='append',
+    #     dest='style_list',
+    #     type='int',
+    #     help='''
+    #     What style should be applied
+    #     '''
+    # )
     parser.add_argument(
         '-c',
         '--color-lookup',
@@ -319,7 +336,7 @@ if __name__ == "__main__":
         i.e. --foreground 100 200 0
         ''',
         dest='foreground',
-        nargs=3,
+        nargs='+',
         type=int)
     parser.add_argument(
         '-b'
@@ -568,7 +585,7 @@ if __name__ == "__main__":
         '''
     )
     args = parser.parse_args()
-    print('\n', '-'*20, '\n', args)
+    # print('\n', '-'*20, '\n', args)
    
     intext = sys.stdin.read()
     if args.grad:
@@ -624,5 +641,4 @@ if __name__ == "__main__":
     else:
         ftext = color_text('color_lookup', intext,
                             args.foreground, args.background)
-
     sys.stdout.write(ftext)

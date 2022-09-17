@@ -7,9 +7,9 @@ import sys
 import time
 from datetime import datetime as dt
 import argparse
-import requests
 import textwrap
 from itertools import zip_longest
+import requests
 
 MAX_RETRIES = 3
 # A 5 second timeout should work for most purposes, but if you have a
@@ -230,7 +230,10 @@ def quick_7_day_formatting(
     just_cols = [''.join([just(j) for j in i]) for i in zip_longest(*cols)]
     return '\n'.join(just_cols)
 
-def format_column(period: dict, data_fields: list, col_width: int):
+def format_column(
+        period: dict,
+        data_fields: list,
+        col_width: int):
     """ Input:
             period: dict - the data for the period we want to format as a
                 column
@@ -243,6 +246,10 @@ def format_column(period: dict, data_fields: list, col_width: int):
     that the width of the column does not exceed col_width.
     """
     wrap = textwrap.TextWrapper(width=col_width)
+
+    # This is for handling the temperature.
+    # The information is split across multiple fields, so we combining them
+    # into one line here.
     temp_template = '{temperature} º{temperatureUnit}'
     temp_str = temp_template.format(**period)
     if 'temperatureTrend' in data_fields:
@@ -250,6 +257,15 @@ def format_column(period: dict, data_fields: list, col_width: int):
             temp_str += f" and {period['temperatureTrend']}"
         data_fields.remove('temperatureTrend')
     period['temperature'] = temp_str
+
+    # Same as above, but for wind.
+    # It doesn't make sense to have the wind direction on a separate line, IMO.
+    # TODO: May include a CLI option for toggling this, but for now we'll just
+    # smoosh them together.
+    if ('windSpeed' in data_fields) and ('windDirection' in data_fields):
+        wind_str = period['windSpeed'] + ' ' + period['windDirection']
+        period['windSpeed'] = wind_str
+        data_fields.remove('windDirection')
 
     return [line for key in data_fields for line in wrap.wrap(str(period[key]))]
 
@@ -303,6 +319,7 @@ if __name__ == "__main__":
         '-n',
         '--number-of-columns',
         dest='col_limit',
+        type=int,
         default=5,
         help='''
         The number of columns that should be returned. With the default
