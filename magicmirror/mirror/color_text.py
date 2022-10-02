@@ -47,7 +47,7 @@ def format_rgb(
     # This specifies the color for the foreground (i.e., the color of the text)
     # as a set of RGB colors.
     # The default foreground is white, so my original, naive idea for cutting
-    # back on the number of characters doesn't work. 
+    # back on the number of characters doesn't work.
     # TODO: Later, if I have time to look up default r,g,b value for foreground,
     # I'll revisit this
     # if rf or gf or bf:

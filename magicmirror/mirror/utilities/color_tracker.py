@@ -1,4 +1,4 @@
-""" The LinearColorTracker class uses the ColorComponent class to track red, 
+""" The LinearColorTracker class uses the ColorComponent class to track red,
 green, and blue components moving with both horizontal and vertical gradients.
 """
 
@@ -126,7 +126,7 @@ class ColorComponent:
         val = self.val(self.step)
         self.step += self.step_inc
         return val
-        
+
 class LinearColorTracker:
     """ This class uses the ColorComponent class to track red, green, and blue
     components moving with horizontal and vertical gradients specified by the

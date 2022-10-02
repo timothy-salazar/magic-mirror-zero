@@ -5,7 +5,7 @@ import subprocess
 import argparse
 
 
-def text_repr(text, font_path):
+def text_repr(text, font_path=None):
     """ Input:
             text: string - the text we want to convert to a large ascii
                 representation using figlet
@@ -15,9 +15,11 @@ def text_repr(text, font_path):
         Output:
             returns a string, which is an ascii art representation of 'text'
     """
-    cmd = ['/usr/local/bin/figlet', '-t', '-f', font_path, text]
-    result = subprocess.run(cmd, capture_output=True, text=True,check=True)
-    return result.stdout
+    if font_path:
+        cmd = ['/usr/local/bin/figlet', '-t', '-f', font_path, text]
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        return result.stdout
+    return text
 
 def get_width(text):
     """ Input:
@@ -38,7 +40,7 @@ def get_height(text):
     """
     return len([i for i in text.split('\n') if i])
 
-def text_dims(text, font_path):
+def text_dims(text, font_path=None):
     """ Input:
             text: string - some text we want to represent as ascii art
             font_path: string - either the path to the .flf font file we want to
@@ -102,7 +104,6 @@ if __name__ == "__main__":
     parser.add_argument(
         '-f',
         '--font-file',
-        required=True,
         help='''
         the path to the font file we want figlet to use (or simply the name, if
         the font is installed in figlet's default font directory).'''
